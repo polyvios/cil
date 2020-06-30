@@ -296,6 +296,8 @@ and fkind =
   | FComplexFloat       (** [float _Complex] *)
   | FComplexDouble      (** [double _Complex] *)
   | FComplexLongDouble  (** [long double _Complex]*)
+  | FFloat128           (** [__float128] *)
+  | FComplexFloat128    (** [__complex128] *)
 
 (** {b Attributes.} *)
 
@@ -542,6 +544,7 @@ and storage =
   | Static
   | Register
   | Extern
+  | ThreadLocal
 
 
 (** {b Expressions.} The CIL expression language contains only the side-effect free expressions of

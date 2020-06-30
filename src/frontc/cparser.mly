@@ -256,7 +256,8 @@ let transformOffsetOf (speclist, dtype) member =
 
 %token EOF
 %token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
-%token<Cabs.cabsloc> INT128 FLOAT128 COMPLEX /* C99 */
+%token<Cabs.cabsloc> INT128 FLOAT128 COMPLEX COMPLEX128 /* C99 */
+%token<Cabs.cabsloc> NORETURN THREADLOCAL/* C11 */
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER HIDDEN
@@ -955,10 +956,12 @@ decl_spec_list:                         /* ISO 6.7 */
 |   STATIC  decl_spec_list_opt          { SpecStorage STATIC :: $2, $1 }
 |   AUTO   decl_spec_list_opt           { SpecStorage AUTO :: $2, $1 }
 |   REGISTER decl_spec_list_opt         { SpecStorage REGISTER :: $2, $1}
+|   THREADLOCAL decl_spec_list_opt      { SpecStorage THREADLOCAL :: $2, $1}
                                         /* ISO 6.7.2 */
 |   type_spec decl_spec_list_opt_no_named { SpecType (fst $1) :: $2, snd $1 }
                                         /* ISO 6.7.4 */
 |   INLINE decl_spec_list_opt           { SpecInline :: $2, $1 }
+|   funspec decl_spec_list_opt          { (fst $1) :: $2, snd $1 }
 |   cvspec decl_spec_list_opt           { (fst $1) :: $2, snd $1 }
 |   attribute_nocv decl_spec_list_opt   { SpecAttr (fst $1) :: $2, snd $1 }
 /* specifier pattern variable (must be last in spec list) */
@@ -989,6 +992,7 @@ type_spec:   /* ISO 6.7.2 */
 |   INT128          { Tint128, $1 }
 |   FLOAT           { Tfloat, $1 }
 |   FLOAT128        { Tfloat128, $1 }
+|   COMPLEX128      { Tcomplex128, $1}
 |   DOUBLE          { Tdouble, $1 }
 /* |   COMPLEX FLOAT   { Tfloat, $2 } */
 /* |   COMPLEX FLOAT128{ Tfloat128, $2 } */
@@ -1295,6 +1299,11 @@ cvspec:
 |   VOLATILE                            { SpecCV(CV_VOLATILE), $1 }
 |   RESTRICT                            { SpecCV(CV_RESTRICT), $1 }
 |   COMPLEX                             { SpecCV(CV_COMPLEX), $1 }
+;
+
+/* function specifiers */
+funspec:
+    NORETURN                            { SpecFun(NORETURN), $1 }
 ;
 
 /*** GCC attributes ***/

@@ -222,6 +222,7 @@ and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem =
   match se with
     SpecTypedef | SpecInline | SpecStorage _ | SpecPattern _ -> se
   | SpecCV _ -> se    (* cop out *)
+  | SpecFun _ -> se
   | SpecAttr a -> begin
       let al' = visitCabsAttribute vis a in
       match al' with

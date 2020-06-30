@@ -302,6 +302,8 @@ and fkind =
   | FComplexFloat       (** [float _Complex] *)
   | FComplexDouble      (** [double _Complex] *)
   | FComplexLongDouble  (** [long double _Complex]*)
+  | FFloat128           (** [__float128] *)
+  | FComplexFloat128    (** [__complex128] *)
 
 (** An attribute has a name and some optional parameters *)
 and attribute = Attr of string * attrparam list
@@ -487,6 +489,7 @@ and storage =
     | Static
     | Register
     | Extern
+    | ThreadLocal
 
 
 (** Expressions (Side-effect free)*)
@@ -1423,15 +1426,15 @@ let attributeHash: (string, attributeClass) H.t =
 
   List.iter (fun a -> H.add table a (AttrFunType false))
     [ "format"; "regparm"; "longcall";
-      "noinline"; "always_inline"; "gnu_inline"; "leaf";
-      "artificial"; "warn_unused_result"; "nonnull";
+      "noinline"; "always_inline"; "gnu_inline"; "leaf"; 
+      "artificial"; "warn_unused_result"; "nonnull"; "c_noreturn";
     ];
 
   List.iter (fun a -> H.add table a (AttrFunType true))
-    [ "stdcall";"cdecl"; "fastcall" ];
+    [ "stdcall";"cdecl"; "fastcall"; ];
 
   List.iter (fun a -> H.add table a AttrType)
-    [ "const"; "volatile"; "restrict"; "mode" ];
+    [ "const"; "volatile"; "restrict"; "mode"; ];
   table
 
 
@@ -1616,9 +1619,11 @@ let typeOfRealAndImagComponents t =
       | FFloat -> FFloat      (* [float] *)
       | FDouble -> FDouble     (* [double] *)
       | FLongDouble -> FLongDouble (* [long double] *)
+      | FFloat128 -> FFloat128
       | FComplexFloat -> FFloat
       | FComplexDouble -> FDouble
       | FComplexLongDouble -> FLongDouble
+      | FComplexFloat128 -> FFloat128
     in
     TFloat (newfkind fkind, attrs)
   | _ -> E.s (E.bug "unexpected non-numerical type for argument to __real__")
@@ -1628,9 +1633,11 @@ let getComplexFkind = function
   | FFloat -> FComplexFloat
   | FDouble -> FComplexDouble
   | FLongDouble -> FComplexLongDouble
+  | FFloat128 -> FComplexFloat128
   | FComplexFloat -> FComplexFloat
   | FComplexDouble -> FComplexDouble
   | FComplexLongDouble -> FComplexLongDouble
+  | FComplexFloat128 -> FComplexFloat128
 
 let var vi : lval = (Var vi, NoOffset)
 (* let assign vi e = Instrs(Set (var vi, e), lu) *)
@@ -1703,15 +1710,18 @@ let d_fkind () = function
     FFloat -> text "float"
   | FDouble -> text "double"
   | FLongDouble -> text "long double"
+  | FFloat128 -> text "__float128"
   | FComplexFloat -> text "_Complex float"
   | FComplexDouble -> text "_Complex double"
   | FComplexLongDouble -> text "_Complex long double"
+  | FComplexFloat128 -> text "__complex128"
 
 let d_storage () = function
     NoStorage -> nil
   | Static -> text "static "
   | Extern -> text "extern "
   | Register -> text "register "
+  | ThreadLocal -> text "_Thread_local "
 
 (* sm: need this value below *)
 let mostNeg32BitInt : int64 = (Int64.of_string "-0x80000000")
@@ -1794,9 +1804,11 @@ let d_const () c =
          FFloat -> chr 'f'
        | FDouble -> nil
        | FLongDouble -> chr 'L'
+       | FFloat128 -> chr 'q'
        | FComplexFloat -> text "iF"
        | FComplexDouble -> chr 'i'
-       | FComplexLongDouble -> text "iL")
+       | FComplexLongDouble -> text "iL"
+       | FComplexFloat128 -> text "iQ")
   | CEnum(_, s, ei) -> text s
 
 
@@ -2202,9 +2214,11 @@ let rec alignOf_int t =
     | TFloat(FFloat, _) -> !M.theMachine.M.alignof_float
     | TFloat(FDouble, _) -> !M.theMachine.M.alignof_double
     | TFloat(FLongDouble, _) -> !M.theMachine.M.alignof_longdouble
+    | TFloat(FFloat128, _) -> !M.theMachine.M.alignof_float128
     | TFloat(FComplexFloat, _) -> !M.theMachine.M.alignof_floatcomplex
     | TFloat(FComplexDouble, _) -> !M.theMachine.M.alignof_doublecomplex
     | TFloat(FComplexLongDouble, _) -> !M.theMachine.M.alignof_longdoublecomplex
+    | TFloat(FComplexFloat128, _) -> !M.theMachine.M.alignof_complex128
     | TNamed (t, _) -> alignOf_int t.ttype
     | TArray (t, _, _) -> alignOf_int t
     | TPtr _ | TBuiltin_va_list _ -> !M.theMachine.M.alignof_ptr
@@ -2465,9 +2479,11 @@ and bitsSizeOf t =
   | TFloat(FDouble, _) -> 8 * !M.theMachine.M.sizeof_double
   | TFloat(FLongDouble, _) -> 8 * !M.theMachine.M.sizeof_longdouble
   | TFloat(FFloat, _) -> 8 * !M.theMachine.M.sizeof_float
+  | TFloat(FFloat128, _) -> 8 * !M.theMachine.M.sizeof_float128
   | TFloat(FComplexDouble, _) ->  8 * !M.theMachine.M.sizeof_doublecomplex
   | TFloat(FComplexLongDouble, _) -> 8 * !M.theMachine.M.sizeof_longdoublecomplex
   | TFloat(FComplexFloat, _) -> 8 * !M.theMachine.M.sizeof_floatcomplex
+  | TFloat(FComplexFloat128, _) -> !M.theMachine.M.sizeof_complex128
   | TEnum (ei, _) -> bitsSizeOf (TInt(ei.ekind, []))
   | TPtr _ -> 8 * !M.theMachine.M.sizeof_ptr
   | TBuiltin_va_list _ -> 8 * !M.theMachine.M.sizeof_ptr
@@ -4473,6 +4489,7 @@ class defaultCilPrinterClass : cilPrinter = object (self)
 *)
     | "volatile", [] -> text "volatile", false
     | "restrict", [] -> text "__restrict", false
+    | "c_noreturn", [] -> text "_Noreturn", false
     | "missingproto", [] -> text "/* missing proto */", false
     | "cdecl", [] when !msvcMode -> text "__cdecl", false
     | "stdcall", [] when !msvcMode -> text "__stdcall", false

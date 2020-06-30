@@ -140,6 +140,7 @@ let init_lexicon _ =
       ("float", fun loc -> FLOAT loc);
       ("__float128", fun loc -> FLOAT128 loc);
       ("_Float128", fun loc -> FLOAT128 loc);
+      ("__complex128", fun loc -> COMPLEX128 loc);
       ("double", fun loc -> DOUBLE loc);
       ("void", fun loc -> VOID loc);
       ("enum", fun loc -> ENUM loc);
@@ -168,6 +169,8 @@ let init_lexicon _ =
                         INLINE loc
                       else
                         IDENT ("_inline", loc));
+      ("_Noreturn", fun loc -> NORETURN loc);
+      ("_Thread_local", fun loc -> THREADLOCAL loc);
       ("__attribute__", fun loc -> ATTRIBUTE loc);
       ("__attribute", fun loc -> ATTRIBUTE loc);
 (*
@@ -339,6 +342,23 @@ let scan_oct_escape str =
   done;
   !the_value
 
+(* For a given Unicode Code-point of type Int64, calculates the UTF-8 representation and returns the bytes
+ * in a list of 1-4 int64 values in reverse order, such that the first byte is the last element of the list *)
+let utf8_representation value = 
+  let generate_bytes n = 
+    let first_byte = 
+      let first_byte_prefix = match n with 1 -> 0L | 2 -> 0xC0L | 3 -> 0xE0L | 4 -> 0xF0L in
+      Int64.logor first_byte_prefix (Int64.shift_right_logical value (6*(n-1)))
+    in
+    let rec generate_one bytes n = 
+      if n = 1 then bytes
+      else generate_one ((Int64.logor 0x80L (Int64.logand (Int64.shift_right_logical value (6*(n-2))) 0x3FL)) :: bytes) (n-1)
+    in
+    generate_one [first_byte] n
+  in
+  let num_bytes = if value <= 127L then 1 else if value <= 2047L then 2 else if value <= 65535L then 3 else 4 in
+  generate_bytes num_bytes
+
 let lex_hex_escape remainder lexbuf =
   let prefix = scan_hex_escape (Lexing.lexeme lexbuf) in
   prefix :: remainder lexbuf
@@ -351,6 +371,12 @@ let lex_simple_escape remainder lexbuf =
   let lexchar = Lexing.lexeme_char lexbuf 1 in
   let prefix = scan_escape lexchar in
   prefix :: remainder lexbuf
+
+let lex_universal_escape ?is_char:(is_char=false) remainder lexbuf = 
+  let value = scan_hex_escape (Lexing.lexeme lexbuf) in
+  let prefix = utf8_representation value in 
+  if is_char then (List.hd prefix) :: remainder lexbuf 
+  else List.rev_append prefix (remainder lexbuf)
 
 let lex_unescaped remainder lexbuf =
   let prefix = Int64.of_int (Char.code (Lexing.lexeme_char lexbuf 0)) in
@@ -435,17 +461,18 @@ let binexponent = ['p' 'P'] ['+' '-']? decdigit+
 let hexfloat = hexprefix hexfraction binexponent
              | hexprefix hexdigit+   binexponent
 
-let floatsuffix = ['f' 'F' 'l' 'L']
+let floatsuffix = ['f' 'F' 'l' 'L' 'q' 'Q']
 let floatnum = (decfloat | hexfloat) floatsuffix?
 
 let complexnum = (decfloat | hexfloat) ((['i' 'I'] floatsuffix) | (floatsuffix? ['i' 'I']))
 
 
-let ident = (letter|'_'|'$')(letter|decdigit|'_'|'$')*
 let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
 let oct_escape = '\\' octdigit octdigit? octdigit?
+let universal_escape = '\\' ('u' hexdigit hexdigit hexdigit hexdigit | 'U' hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit)
+let ident = (letter|'_'|'$'|universal_escape)(letter|decdigit|'_'|'$'|universal_escape)*
 
 (* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
 let no_parse_pragma =
@@ -669,6 +696,7 @@ and str = parse
 |	hex_escape	{addLexeme lexbuf; lex_hex_escape str lexbuf}
 |	oct_escape	{addLexeme lexbuf; lex_oct_escape str lexbuf}
 |	escape		{addLexeme lexbuf; lex_simple_escape str lexbuf}
+| universal_escape {addLexeme lexbuf; lex_universal_escape str lexbuf}
 |	_		{addLexeme lexbuf; lex_unescaped str lexbuf}
 
 and chr =  parse
@@ -676,6 +704,7 @@ and chr =  parse
 |	hex_escape	{lex_hex_escape chr lexbuf}
 |	oct_escape	{lex_oct_escape chr lexbuf}
 |	escape		{lex_simple_escape chr lexbuf}
+| universal_escape {lex_universal_escape ~is_char:true chr lexbuf}
 |	_		{lex_unescaped chr lexbuf}
 
 and msasm = parse

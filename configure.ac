@@ -168,7 +168,7 @@ AC_MSG_RESULT($UNDERSCORE_NAME)
 
 # checks for header files
 AC_HEADER_STDC
-AC_CHECK_HEADERS(stdlib.h strings.h sys/time.h unistd.h wchar.h stdbool.h)
+AC_CHECK_HEADERS(stdlib.h strings.h sys/time.h unistd.h wchar.h stdbool.h quadmath.h)
 
 # checks for typedefs, structures, and compiler characteristics
 AC_C_CONST

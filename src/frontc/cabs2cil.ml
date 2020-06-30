@@ -1256,8 +1256,12 @@ let arithmeticConversion    (* c.f. ISO 6.3.1.8 *)
     (t2: typ) : typ =
   let resultingFType fkind1 t1 fkind2 t2 =
     (* t1 and t2 are the original types before unrollType, so TNamed is preserved if possible *)
-    let isComplex f = f = FComplexFloat || f = FComplexDouble || f = FComplexLongDouble in
+    let isComplex f = f = FComplexFloat || f = FComplexDouble || f = FComplexLongDouble || f = FComplexFloat128 in
     match fkind1, fkind2 with
+    | FComplexFloat128, _ -> t1
+    | _, FComplexFloat128 -> t2
+    | FFloat128, other -> if isComplex other then TFloat(FComplexFloat128, []) else t1
+    | other, FFloat128 -> if isComplex other then TFloat(FComplexFloat128, []) else t2 
     | FComplexLongDouble, _ -> t1
     | _, FComplexLongDouble -> t2
     | FLongDouble, other -> if isComplex other then TFloat(FComplexLongDouble, []) else t1
@@ -2314,6 +2318,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
    * collected and processed separately. *)
   let attrs : A.attribute list ref = ref [] in      (* __attribute__, etc. *)
   let cvattrs : A.cvspec list ref = ref [] in       (* const/volatile *)
+  let funattrs : A.funspec list ref = ref [] in     (* _Noreturn *)
 
   let doSpecElem (se: A.spec_elem)
                  (acc: A.typeSpecifier list)
@@ -2331,11 +2336,13 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
           | A.REGISTER -> Register
           | A.STATIC -> Static
           | A.EXTERN -> Extern
+          | A.THREADLOCAL -> ThreadLocal
         in
         storage := sto';
         acc
 
     | A.SpecCV cv -> cvattrs := cv :: !cvattrs; acc
+    | A.SpecFun f -> funattrs := f :: !funattrs; acc
     | A.SpecAttr a -> attrs := a :: !attrs; acc
     | A.SpecType ts -> ts :: acc
     | A.SpecPattern _ -> E.s (E.bug "SpecPattern in cabs2cil input")
@@ -2441,7 +2448,8 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
     | [A.Tdouble] -> TFloat(FDouble, [])
 
     | [A.Tlong; A.Tdouble] -> TFloat(FLongDouble, [])
-    | [A.Tfloat128] -> TFloat(FLongDouble, []) (* TODO: Correct? *)
+    | [A.Tfloat128] -> TFloat(FFloat128, [])
+    | [A.Tcomplex128] -> TFloat(FComplexFloat128, [])
 
      (* Now the other type specifiers *)
     | [A.Tnamed n] -> begin
@@ -2625,7 +2633,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
     | _ ->
         E.s (error "Invalid combination of type specifiers")
   in
-  bt,!storage,!isinline,List.rev (!attrs @ (convertCVtoAttr !cvattrs))
+  bt,!storage,!isinline,List.rev (!attrs @ (convertCVtoAttr !cvattrs) @ (convertFuntoAttr !funattrs))
 
 (* given some cv attributes, convert them into named attributes for
  * uniform processing *)
@@ -2636,6 +2644,14 @@ and convertCVtoAttr (src: A.cvspec list) : A.attribute list =
   | CV_VOLATILE :: tl -> ("volatile",[]) :: (convertCVtoAttr tl)
   | CV_RESTRICT :: tl -> ("restrict",[]) :: (convertCVtoAttr tl)
   | CV_COMPLEX  :: tl -> ("complex",[]) ::  (convertCVtoAttr tl)
+
+and convertFuntoAttr (src: A.funspec list) : A.attribute list = 
+  match src with 
+  | [] -> []
+  | NORETURN    :: tl -> ("c_noreturn", []) :: (convertFuntoAttr tl)
+  | INLINE      :: tl
+  | VIRTUAL     :: tl
+  | EXPLICIT    :: tl -> [] (* TODO? *)
 
 
 and makeVarInfoCabs
@@ -3559,10 +3575,12 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
                 String.sub str 0 (l - 1), FFloat
               else if hasSuffix str "D" then
                 String.sub str 0 (l - 1), FDouble
+              else if hasSuffix str "Q" then
+                String.sub str 0 (l - 1), FFloat128
               else
                 str, FDouble
             in
-            if kind = FLongDouble then
+            if kind = FLongDouble || kind = FFloat128 then
               (* We only have 64-bit values in Ocaml *)
               E.log "treating long double constant %s as double constant at %a.\n"
                 str d_loc !currentLoc;
@@ -3589,6 +3607,8 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
                 String.sub str 0 (l - 2), FComplexFloat
               else if hasSuffix str "iD" || hasSuffix str "Di" then
                 String.sub str 0 (l - 2), FComplexDouble
+              else if hasSuffix str "iQ" || hasSuffix str "Qi" then
+                String.sub str 0 (l - 2), FComplexFloat128
               else (* A.CONST_COMPLEX always has the suffix i *)
                 String.sub str 0 (l - 1), FComplexDouble
             in
@@ -3677,10 +3697,12 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
           match fkind with
           | FFloat
           | FDouble
-          | FLongDouble -> 8
+          | FLongDouble 
+          | FFloat128 -> 8
           | FComplexFloat
           | FComplexDouble
-          | FComplexLongDouble -> 9
+          | FComplexLongDouble
+          | FComplexFloat128 -> 9
           end
         | TEnum _ -> 3
         | TPtr _ -> 5
@@ -4382,7 +4404,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
                         (* if the t we determined here is complex, but the return types of all the fptrs are not, the return *)
                         (* type should not be complex *)
                         let isComplex t = match t with
-                          | TFloat(f, _) -> f = FComplexFloat || f = FComplexDouble || f = FComplexLongDouble
+                          | TFloat(f, _) -> f = FComplexFloat || f = FComplexDouble || f = FComplexLongDouble || f = FComplexFloat128
                           | _ -> false
                         in
                         if List.for_all (fun x -> not (isComplex x)) retTypes then

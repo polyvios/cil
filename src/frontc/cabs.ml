@@ -64,6 +64,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tint128 (* TODO needed? *)
   | Tfloat
   | Tfloat128 (* TODO needed? *)
+  | Tcomplex128
   | Tdouble
   | Tsigned
   | Tsizet    (* used temporarily to translate offsetof() *)
@@ -81,10 +82,10 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | TtypeofT of specifier * decl_type       (* GCC __typeof__ *)
 
 and storage =
-    NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER
+    NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER | THREADLOCAL
 
 and funspec =
-    INLINE | VIRTUAL | EXPLICIT
+    INLINE | VIRTUAL | EXPLICIT | NORETURN
 
 and cvspec =
     CV_CONST | CV_VOLATILE | CV_RESTRICT | CV_COMPLEX
@@ -99,6 +100,7 @@ and spec_elem =
   | SpecCV of cvspec            (* const/volatile *)
   | SpecAttr of attribute       (* __attribute__ *)
   | SpecStorage of storage
+  | SpecFun of funspec
   | SpecInline
   | SpecType of typeSpecifier
   | SpecPattern of string       (* specifier pattern variable *)
