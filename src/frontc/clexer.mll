@@ -519,7 +519,7 @@ rule initial =
 |		"L'"			{ CST_WCHAR (chr lexbuf, currentLoc ()) }
 |   "u'"        {CST_CHAR16 (chr lexbuf, currentLoc ())}
 |   "U'"        {CST_CHAR32 (chr lexbuf, currentLoc ())}
-|		'"'			{ addLexeme lexbuf; (* '"' *)
+|		'"' | "u8\""			{ addLexeme lexbuf; (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
  *  e.g. if it's the "world" in
  *     L"Hello, " "world"
@@ -538,7 +538,7 @@ rule initial =
                                                       Printexc.to_string e))}
 (* |   "u\""       {try CST_STRING16(str lexbuf, currentLoc ())
                   with e ->
-                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}   *)                
+                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}   *)               
 |		floatnum		{CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
 |   complexnum  {CST_COMPLEX (Lexing.lexeme lexbuf, currentLoc ())}
 |		hexnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
