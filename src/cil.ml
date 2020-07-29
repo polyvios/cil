@@ -435,6 +435,8 @@ and varinfo = {
 
     mutable vinline: bool;        (** Whether this varinfo is for an inline function. *)
 
+    mutable vthreadlocal: bool;
+
     mutable vdecl: location;            (** Location of variable declaration *)
 
     vinit: initinfo;
@@ -489,7 +491,6 @@ and storage =
     | Static
     | Register
     | Extern
-    | ThreadLocal
 
 
 (** Expressions (Side-effect free)*)
@@ -1288,10 +1289,13 @@ let upointType = ref voidType
 (* An integer type that fits a pointer difference. Initialized by initCIL *)
 let ptrdiffType = ref voidType
 
-(* An integer type that fits wchar_t. Initialized by initCIL *)
+(* Integer types that fit wchar_t, char16_t and char32_t. Initialized by initCIL *)
 let wcharKind = ref IChar
 let wcharType = ref voidType
-
+let char16Kind = ref IChar
+let char16Type = ref voidType
+let char32Kind = ref IChar
+let char32Type = ref voidType
 
 (* An integer type that is the type of sizeof. Initialized by initCIL *)
 let typeOfSizeOf = ref voidType
@@ -1721,7 +1725,6 @@ let d_storage () = function
   | Static -> text "static "
   | Extern -> text "extern "
   | Register -> text "register "
-  | ThreadLocal -> text "_Thread_local "
 
 (* sm: need this value below *)
 let mostNeg32BitInt : int64 = (Int64.of_string "-0x80000000")
@@ -3431,6 +3434,7 @@ class defaultCilPrinterClass : cilPrinter = object (self)
     let stom, rest = separateStorageModifiers v.vattr in
     (* First the storage modifiers *)
     text (if v.vinline then "__inline " else "")
+      ++ text (if v.vthreadlocal then "_Thread_local " else "")
       ++ d_storage () v.vstorage
       ++ (self#pAttrs () stom)
       ++ (self#pType (Some (text v.vname)) () v.vtype)
@@ -5055,6 +5059,7 @@ let makeVarinfo global name ?init typ =
       vdecl = lu;
       vinit = {init=init};
       vinline = false;
+      vthreadlocal = false;
       vattr = [];
       vstorage = NoStorage;
       vaddrof = false;
@@ -7038,6 +7043,10 @@ let initCIL () =
     typeOfSizeOf := TInt(!kindOfSizeOf, []);
     wcharKind := findIkindName !M.theMachine.M.wchar_t;
     wcharType := TInt(!wcharKind, []);
+    char16Kind := findIkindName !M.theMachine.M.char16_t;
+    char16Type := TInt(!char16Kind, []);
+    char32Kind := findIkindName !M.theMachine.M.char32_t;
+    char32Type := TInt(!char32Kind, []);
     char_is_unsigned := !M.theMachine.M.char_is_unsigned;
     little_endian := !M.theMachine.M.little_endian;
     underscore_name := !M.theMachine.M.underscore_name;

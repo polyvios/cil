@@ -494,6 +494,8 @@ and varinfo = {
     mutable vinline: bool;
     (** Whether this varinfo is for an inline function. *)
 
+    mutable vthreadlocal: bool;
+
     mutable vdecl: location;
     (** Location of variable declaration. *)
 
@@ -544,7 +546,6 @@ and storage =
   | Static
   | Register
   | Extern
-  | ThreadLocal
 
 
 (** {b Expressions.} The CIL expression language contains only the side-effect free expressions of
@@ -1347,10 +1348,14 @@ val charType: typ
 (** char * *)
 val charPtrType: typ
 
-(** wchar_t (depends on architecture) and is set when you call
+(** wchar_t, char16_t and char32_t (depends on architecture) and is set when you call
  * {!Cil.initCIL}. *)
 val wcharKind: ikind ref
 val wcharType: typ ref
+val char16Kind: ikind ref
+val char16Type: typ ref
+val char32Kind: ikind ref
+val char32Type: typ ref
 
 (** char const * *)
 val charConstPtrType: typ

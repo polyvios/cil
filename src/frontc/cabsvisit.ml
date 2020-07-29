@@ -220,7 +220,7 @@ and childrenTypeSpecifier vis ts =
 
 and childrenSpecElem (vis: cabsVisitor) (se: spec_elem) : spec_elem =
   match se with
-    SpecTypedef | SpecInline | SpecStorage _ | SpecPattern _ -> se
+    SpecTypedef | SpecInline | SpecStorage _ | SpecPattern _ | SpecThreadLocal-> se
   | SpecCV _ -> se    (* cop out *)
   | SpecFun _ -> se
   | SpecAttr a -> begin

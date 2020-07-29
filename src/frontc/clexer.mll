@@ -466,6 +466,7 @@ let floatnum = (decfloat | hexfloat) floatsuffix?
 
 let complexnum = (decfloat | hexfloat) ((['i' 'I'] floatsuffix) | (floatsuffix? ['i' 'I']))
 
+let strprefix = "u8" | "L" | "u" | "U"
 
 let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
@@ -516,6 +517,8 @@ rule initial =
 |               "_Pragma" 	        { PRAGMA (currentLoc ()) }
 |		'\''			{ CST_CHAR (chr lexbuf, currentLoc ())}
 |		"L'"			{ CST_WCHAR (chr lexbuf, currentLoc ()) }
+|   "u'"        {CST_CHAR16 (chr lexbuf, currentLoc ())}
+|   "U'"        {CST_CHAR32 (chr lexbuf, currentLoc ())}
 |		'"'			{ addLexeme lexbuf; (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
  *  e.g. if it's the "world" in
@@ -533,6 +536,9 @@ rule initial =
                                              raise (InternalError
                                                      ("wide string: " ^
                                                       Printexc.to_string e))}
+(* |   "u\""       {try CST_STRING16(str lexbuf, currentLoc ())
+                  with e ->
+                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}   *)                
 |		floatnum		{CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
 |   complexnum  {CST_COMPLEX (Lexing.lexeme lexbuf, currentLoc ())}
 |		hexnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
@@ -698,6 +704,9 @@ and str = parse
 |	escape		{addLexeme lexbuf; lex_simple_escape str lexbuf}
 | universal_escape {addLexeme lexbuf; lex_universal_escape str lexbuf}
 |	_		{addLexeme lexbuf; lex_unescaped str lexbuf}
+
+and u8_str = parse 
+"u8" {}
 
 and chr =  parse
 	'\''	        {[]}

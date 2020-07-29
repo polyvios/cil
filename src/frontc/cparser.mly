@@ -243,7 +243,7 @@ let transformOffsetOf (speclist, dtype) member =
 %token <string * Cabs.cabsloc> IDENT
 %token <string * Cabs.cabsloc> QUALIFIER
 %token <int64 list * Cabs.cabsloc> CST_CHAR
-%token <int64 list * Cabs.cabsloc> CST_WCHAR
+%token <int64 list * Cabs.cabsloc> CST_WCHAR CST_CHAR16 CST_CHAR32
 %token <string * Cabs.cabsloc> CST_INT
 %token <string * Cabs.cabsloc> CST_FLOAT
 %token <string * Cabs.cabsloc> CST_COMPLEX
@@ -252,7 +252,7 @@ let transformOffsetOf (speclist, dtype) member =
 /* Each character is its own list element, and the terminating nul is not
    included in this list. */
 %token <int64 list * Cabs.cabsloc> CST_STRING
-%token <int64 list * Cabs.cabsloc> CST_WSTRING
+%token <int64 list * Cabs.cabsloc> CST_WSTRING CST_STRING16
 
 %token EOF
 %token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
@@ -698,6 +698,8 @@ constant:
 |   CST_COMPLEX     {CONST_COMPLEX (fst $1), snd $1}
 |   CST_CHAR				{CONST_CHAR (fst $1), snd $1}
 |   CST_WCHAR				{CONST_WCHAR (fst $1), snd $1}
+|   CST_CHAR16      {CONST_CHAR16 (fst $1), snd $1}
+|   CST_CHAR32      {CONST_CHAR32 (fst $1), snd $1}
 |   string_constant		        {CONST_STRING (fst $1), snd $1}
 |   wstring_list			{CONST_WSTRING (fst $1), snd $1}
 ;
@@ -956,7 +958,7 @@ decl_spec_list:                         /* ISO 6.7 */
 |   STATIC  decl_spec_list_opt          { SpecStorage STATIC :: $2, $1 }
 |   AUTO   decl_spec_list_opt           { SpecStorage AUTO :: $2, $1 }
 |   REGISTER decl_spec_list_opt         { SpecStorage REGISTER :: $2, $1}
-|   THREADLOCAL decl_spec_list_opt      { SpecStorage THREADLOCAL :: $2, $1}
+|   THREADLOCAL decl_spec_list_opt      { SpecThreadLocal :: $2, $1}
                                         /* ISO 6.7.2 */
 |   type_spec decl_spec_list_opt_no_named { SpecType (fst $1) :: $2, snd $1 }
                                         /* ISO 6.7.4 */

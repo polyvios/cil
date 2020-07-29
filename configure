@@ -5220,7 +5220,7 @@ $as_echo "#define STDC_HEADERS 1" >>confdefs.h
 
 fi
 
-for ac_header in stdlib.h strings.h sys/time.h unistd.h wchar.h stdbool.h math.h quadmath.h
+for ac_header in stdlib.h strings.h sys/time.h unistd.h wchar.h stdbool.h quadmath.h uchar.h
 do :
   as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 ac_fn_c_check_header_mongrel "$LINENO" "$ac_header" "$as_ac_Header" "$ac_includes_default"
@@ -5519,6 +5519,7 @@ $as_echo_n "checking for real definition of size_t... " >&6; }
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5538,6 +5539,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5559,6 +5561,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5578,6 +5581,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5599,6 +5603,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5618,6 +5623,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5639,6 +5645,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5658,6 +5665,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5679,6 +5687,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5698,6 +5707,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5734,6 +5744,7 @@ $as_echo_n "checking for real definition of wchar_t... " >&6; }
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5753,6 +5764,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5774,6 +5786,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5793,6 +5806,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5814,6 +5828,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5833,6 +5848,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5854,6 +5870,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5873,6 +5890,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5894,6 +5912,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5913,6 +5932,7 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 #include <stddef.h>
 #include <wchar.h>
+#include <uchar.h>
 /* We define a prototype with one type and the function with
    another type.  This will result in compilation error
    unless the types are really identical. */
@@ -5932,6 +5952,456 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 
 cat >>confdefs.h <<_ACEOF
 #define TYPE_WCHAR_T "$real_type"
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $real_type" >&5
+$as_echo "$real_type" >&6; }
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for real definition of char16_t" >&5
+$as_echo_n "checking for real definition of char16_t... " >&6; }
+  real_type=''
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+int foo(int x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='int'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned int foo(unsigned int x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned int'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+long foo(long x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned long foo(unsigned long x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+long long foo(long long x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='long long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned long long foo(unsigned long long x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned long long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+short foo(short x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='short'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned short foo(unsigned short x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned short'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+char foo(char x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='char'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned char foo(unsigned char x);
+char16_t foo(char16_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned char'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    as_fn_error $? "cannot find definition of char16_t" "$LINENO" 5
+  fi
+
+cat >>confdefs.h <<_ACEOF
+#define TYPE_CHAR16_T "$real_type"
+_ACEOF
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $real_type" >&5
+$as_echo "$real_type" >&6; }
+
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for real definition of char32_t" >&5
+$as_echo_n "checking for real definition of char32_t... " >&6; }
+  real_type=''
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+int foo(int x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='int'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned int foo(unsigned int x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned int'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+long foo(long x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned long foo(unsigned long x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+long long foo(long long x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='long long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned long long foo(unsigned long long x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned long long'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+short foo(short x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='short'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned short foo(unsigned short x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned short'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+char foo(char x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='char'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stddef.h>
+#include <wchar.h>
+#include <uchar.h>
+/* We define a prototype with one type and the function with
+   another type.  This will result in compilation error
+   unless the types are really identical. */
+unsigned char foo(unsigned char x);
+char32_t foo(char32_t x) { return x; }
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  real_type='unsigned char'
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  fi
+
+
+  if test -z "$real_type"; then
+    as_fn_error $? "cannot find definition of char32_t" "$LINENO" 5
+  fi
+
+cat >>confdefs.h <<_ACEOF
+#define TYPE_CHAR32_T "$real_type"
 _ACEOF
 
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $real_type" >&5

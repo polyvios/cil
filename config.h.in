@@ -6,9 +6,6 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the <math.h> header file. */
-#undef HAVE_MATH_H
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -48,6 +45,9 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the <uchar.h> header file. */
+#undef HAVE_UCHAR_H
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
@@ -80,6 +80,12 @@
 
 /* Define to 1 if you can safely include both <sys/time.h> and <time.h>. */
 #undef TIME_WITH_SYS_TIME
+
+/* Real integer type corresponding to char16_t. */
+#undef TYPE_CHAR16_T
+
+/* Real integer type corresponding to char32_t. */
+#undef TYPE_CHAR32_T
 
 /* Real integer type corresponding to size_t. */
 #undef TYPE_SIZE_T

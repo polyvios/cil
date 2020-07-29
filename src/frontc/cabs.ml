@@ -82,7 +82,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | TtypeofT of specifier * decl_type       (* GCC __typeof__ *)
 
 and storage =
-    NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER | THREADLOCAL
+    NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER
 
 and funspec =
     INLINE | VIRTUAL | EXPLICIT | NORETURN
@@ -102,6 +102,7 @@ and spec_elem =
   | SpecStorage of storage
   | SpecFun of funspec
   | SpecInline
+  | SpecThreadLocal
   | SpecType of typeSpecifier
   | SpecPattern of string       (* specifier pattern variable *)
 
@@ -289,6 +290,8 @@ and constant =
   | CONST_COMPLEX of string (* the textual representation *)
   | CONST_CHAR of int64 list
   | CONST_WCHAR of int64 list
+  | CONST_CHAR16 of int64 list
+  | CONST_CHAR32 of int64 list
   | CONST_STRING of string
   | CONST_WSTRING of int64 list
     (* ww: wstrings are stored as an int64 list at this point because

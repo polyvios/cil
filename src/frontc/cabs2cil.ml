@@ -584,6 +584,8 @@ let alphaConvertVarAndAddToEnv (addtoenv: bool) (vi: varinfo) : varinfo =
   (* Store all locals in the slocals (in reversed order). We'll reverse them
    * and take out the formals at the end of the function *)
   if not vi.vglob then
+    if vi.vthreadlocal && vi.vstorage = NoStorage then 
+      E.s (error "Declaration specifiers of %s in block scope include _Thread_local but do not include static or extern" vi.vname);
     !currentFunctionFDEC.slocals <- newvi :: !currentFunctionFDEC.slocals;
 
   (if addtoenv then
@@ -2304,9 +2306,10 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
                    (specs: A.spec_elem list)
        (* Returns the base type, the storage, whether it is inline and the
         * (unprocessed) attributes *)
-    : typ * storage * bool * A.attribute list =
+    : typ * storage * bool * bool * A.attribute list =
   (* Do one element and collect the type specifiers *)
   let isinline = ref false in (* If inline appears *)
+  let isthreadlocal = ref false in
   (* The storage is placed here *)
   let storage : storage ref = ref NoStorage in
 
@@ -2325,9 +2328,13 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
                   : A.typeSpecifier list =
     match se with
       A.SpecTypedef -> acc
-    | A.SpecInline -> isinline := true; acc
+    | A.SpecInline -> isinline := true; acc 
+    | A.SpecThreadLocal -> 
+      if !storage <> NoStorage && !storage <> Extern && !storage <> Static then 
+        E.s (error "Multiple storage specifiers");
+      isthreadlocal := true; acc
     | A.SpecStorage st ->
-        if !storage <> NoStorage then
+        if !storage <> NoStorage || !isthreadlocal && st <> STATIC && st <> EXTERN then
           E.s (error "Multiple storage specifiers");
         let sto' =
           match st with
@@ -2336,7 +2343,6 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
           | A.REGISTER -> Register
           | A.STATIC -> Static
           | A.EXTERN -> Extern
-          | A.THREADLOCAL -> ThreadLocal
         in
         storage := sto';
         acc
@@ -2633,7 +2639,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
     | _ ->
         E.s (error "Invalid combination of type specifiers")
   in
-  bt,!storage,!isinline,List.rev (!attrs @ (convertCVtoAttr !cvattrs) @ (convertFuntoAttr !funattrs))
+  bt,!storage,!isinline, !isthreadlocal, List.rev (!attrs @ (convertCVtoAttr !cvattrs) @ (convertFuntoAttr !funattrs))
 
 (* given some cv attributes, convert them into named attributes for
  * uniform processing *)
@@ -2658,7 +2664,7 @@ and makeVarInfoCabs
                 ~(isformal: bool)
                 ~(isglobal: bool)
 		(ldecl : location)
-                (bt, sto, inline, attrs)
+                (bt, sto, inline, threadlocal, attrs)
                 (n,ndt,a)
       : varinfo =
   let vtype, nattr =
@@ -2681,6 +2687,7 @@ and makeVarInfoCabs
   vi.vstorage <- sto;
   vi.vattr <- nattr;
   vi.vdecl <- ldecl;
+  vi.vthreadlocal <- threadlocal;
 
   if false then
     ignore (E.log "Created varinfo %s : %a\n" vi.vname d_type vi.vtype);
@@ -3109,7 +3116,7 @@ and isVariableSizedArray (dt: A.decl_type): (A.decl_type * chunk * exp list) opt
     None
 
 and doOnlyType (specs: A.spec_elem list) (dt: A.decl_type) : typ =
-  let bt',sto,inl,attrs = doSpecList "" specs in
+  let bt',sto,inl,thrl,attrs = doSpecList "" specs in
   if sto <> NoStorage || inl then
     E.s (error "Storage or inline specifier in type only");
   let tres, nattr = doType AttrType bt' (A.PARENTYPE(attrs, dt, [])) in
@@ -3136,7 +3143,7 @@ and makeCompType (isstruct: bool)
       [] -> ""
     | ((n, _, _, _), _) :: _ -> n
     in
-    let bt, sto, inl, attrs = doSpecList sugg s in
+    let bt, sto, inl, thrl, attrs = doSpecList sugg s in
     (* Do the fields *)
     let makeFieldInfo
         (((n,ndt,a,cloc) : A.name), (widtho : A.expression option))
@@ -3561,10 +3568,20 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
              * the value.  But L'abc' has type wchar, and so is equivalent to
              * L'c').  But gcc allows L'abc', so I'll leave this here in case
              * I'm missing some architecture dependent behavior. *)
-	    let value = reduce_multichar !wcharType char_list in
-	    let result = kinteger64 !wcharKind value in
+	          let value = reduce_multichar !wcharType char_list in
+	          let result = kinteger64 !wcharKind value in
             finishExp empty result (typeOf result)
 
+        | A.CONST_CHAR16 char_list -> 
+            let value = reduce_multichar !char16Type char_list in
+            let result = kinteger64 !char16Kind value in
+            finishExp empty result (typeOf result)
+        
+        | A.CONST_CHAR32 char_list -> 
+            let value = reduce_multichar !char32Type char_list in
+            let result = kinteger64 !char32Kind value in
+            finishExp empty result (typeOf result)
+            
         | A.CONST_FLOAT str -> begin
             (* Maybe it ends in U or UL. Strip those *)
             let l = String.length str in
@@ -3770,8 +3787,8 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
                 if !scopes == [] then begin
                   (* This is a global.  Mark the new vars as static *)
                   let spec_res' =
-                    let t, sto, inl, attrs = spec_res in
-                    t, Static, inl, attrs
+                    let t, sto, inl, thrl, attrs = spec_res in
+                    t, Static, inl, thrl, attrs
                   in
                   ignore (createGlobal spec_res'
                             ((newvar, dt', [], cabslu), ie'));
@@ -5529,7 +5546,7 @@ and doInit
 
 (* Create and add to the file (if not already added) a global. Return the
  * varinfo *)
-and createGlobal (specs : (typ * storage * bool * A.attribute list))
+and createGlobal (specs : (typ * storage * bool * bool * A.attribute list))
                  (((n,ndt,a,cloc), inite) : A.init_name) : varinfo =
   try
     if debugGlobal then
@@ -5540,6 +5557,7 @@ and createGlobal (specs : (typ * storage * bool * A.attribute list))
     (* Add the variable to the environment before doing the initializer
      * because it might refer to the variable itself *)
     if isFunctionType vi.vtype then begin
+      if vi.vthreadlocal then E.s (error "Invalid storage class '_Thread_local' for function %s" vi.vname);
       if inite != A.NO_INIT  then
         E.s (error "Function declaration with initializer (%s)"
                vi.vname);
@@ -5642,7 +5660,7 @@ and createGlobal (specs : (typ * storage * bool * A.attribute list))
 *)
 
 (* Must catch the Static local variables. Make them global *)
-and createLocal ?allow_var_decl:(allow_var_decl=true) ((_, sto, _, _) as specs)
+and createLocal ?allow_var_decl:(allow_var_decl=true) ((_, sto, _, _, _) as specs)
                 ((((n, ndt, a, cloc) : A.name),
                   (inite: A.init_expression)) as init_name)
   : chunk =
@@ -5812,7 +5830,7 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
       let doOneDeclarator (acc: chunk) (name: init_name) =
         let (n,ndt,a,l),_ = name in
         if isglobal then begin
-          let bt,_,_,attrs = spec_res in
+          let bt,_,_,_,attrs = spec_res in
           let vtype, nattr =
             doType (AttrName false) bt (A.PARENTYPE(attrs, ndt, a)) in
           (match filterAttributes "alias" nattr with
@@ -5939,7 +5957,7 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
 
             (* Fix the NAME and the STORAGE *)
             let _ =
-              let bt,sto,inl,attrs = doSpecList n specs in
+              let bt,sto,inl,thrl,attrs = doSpecList n specs in
               !currentFunctionFDEC.svar.vinline <- inl;
 
               let ftyp, funattr =
@@ -6054,8 +6072,7 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
 		end
 	      in
 	      let fmlocs = (match dt with PROTO(_, fml, _) -> fml | _ -> []) in
-	      let formals = doFormals (argsToList formals_t) fmlocs in
-
+        let formals = doFormals (argsToList formals_t) fmlocs in
               (* Recreate the type based on the formals. *)
               let ftype = TFun(returnType,
                                Some (Util.list_map (fun f -> (f.vname,
@@ -6356,7 +6373,7 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
 and doTypedef ((specs, nl): A.name_group) =
   try
     (* Do the specifiers exactly once *)
-    let bt, sto, inl, attrs = doSpecList (suggestAnonName nl) specs in
+    let bt, sto, inl, thrl, attrs = doSpecList (suggestAnonName nl) specs in
     if sto <> NoStorage || inl then
       E.s (error "Storage or inline specifier not allowed in typedef");
     let createTypedef ((n,ndt,a,loc) : A.name) =
@@ -6400,7 +6417,7 @@ and doTypedef ((specs, nl): A.name_group) =
 
 and doOnlyTypedef (specs: A.spec_elem list) : unit =
   try
-    let bt, sto, inl, attrs = doSpecList "" specs in
+    let bt, sto, inl, thrl, attrs = doSpecList "" specs in
     if sto <> NoStorage || inl then
       E.s (error "Storage or inline specifier not allowed in typedef");
     let restyp, nattr = doType AttrType bt (A.PARENTYPE(attrs,
@@ -6703,7 +6720,7 @@ and doStatement (s : A.statement) : chunk =
             (* Make a temporary variable, avoiding generation of VarDecl if possible *)
             (* as this is unsupported (see below)                                    *)
             let vchunk = createLocal ~allow_var_decl:false
-                (!upointType, NoStorage, false, [])
+                (!upointType, NoStorage, false, false, [])
                 (("__compgoto", A.JUSTBASE, [], loc), A.NO_INIT)
             in
             if not (isEmpty vchunk) then
