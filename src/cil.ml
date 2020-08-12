@@ -1980,8 +1980,7 @@ and typeOffset basetyp =
         TComp (_, baseAttrs) ->
 	  let fieldType = typeOffset fi.ftype o in
 	  blendAttributes baseAttrs fieldType
-      | _ -> E.s (bug ("typeOffset: Field on a non-compound. Basetype: " ^ basetyp.vname ^ "\nField: " ^ fi.fieldinfo.fname ^ "\n"));
-
+      | _ -> print_endline @@ "Field: " ^ fi.fname; E.s (bug ("typeOffset: Field on a non-compound. Field: "))
 (**
  **
  ** MACHINE DEPENDENT PART
