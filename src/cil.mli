@@ -638,6 +638,8 @@ and exp =
 
 (** {b Constants.} *)
 
+and wstring_type = | Wchar_t | Char16_t | Char32_t
+
 (** Literal constants *)
 and constant =
   | CInt64 of int64 * ikind * string option
@@ -652,7 +654,7 @@ and constant =
      * only case when you would like a string literal to have an array type
      * is when it is an argument to sizeof. In that case you should use
      * SizeOfStr. *)
-  | CWStr of int64 list
+  | CWStr of int64 list * wstring_type
     (** Wide character string constant. Note that the local interpretation
      * of such a literal depends on {!Cil.wcharType} and {!Cil.wcharKind}.
      * Such a constant has type pointer to {!Cil.wcharType}. The

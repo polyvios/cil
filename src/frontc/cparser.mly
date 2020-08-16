@@ -252,7 +252,7 @@ let transformOffsetOf (speclist, dtype) member =
 /* Each character is its own list element, and the terminating nul is not
    included in this list. */
 %token <int64 list * Cabs.cabsloc> CST_STRING
-%token <int64 list * Cabs.cabsloc> CST_WSTRING CST_STRING16
+%token <int64 list * Cabs.cabsloc> CST_WSTRING CST_STRING16 CST_STRING32
 
 %token EOF
 %token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
@@ -697,11 +697,13 @@ constant:
 |   CST_FLOAT				{CONST_FLOAT (fst $1), snd $1}
 |   CST_COMPLEX     {CONST_COMPLEX (fst $1), snd $1}
 |   CST_CHAR				{CONST_CHAR (fst $1), snd $1}
-|   CST_WCHAR				{CONST_WCHAR (fst $1), snd $1}
-|   CST_CHAR16      {CONST_CHAR16 (fst $1), snd $1}
-|   CST_CHAR32      {CONST_CHAR32 (fst $1), snd $1}
+|   CST_WCHAR				{CONST_WCHAR (fst $1, WCHAR_T), snd $1}
+|   CST_CHAR16      {CONST_WCHAR (fst $1, CHAR16_T), snd $1}
+|   CST_CHAR32      {CONST_WCHAR (fst $1, CHAR32_T), snd $1}
 |   string_constant		        {CONST_STRING (fst $1), snd $1}
-|   wstring_list			{CONST_WSTRING (fst $1), snd $1}
+|   wstring_list			{CONST_WSTRING (fst $1, WCHAR_T), snd $1}
+|   string16_list     {CONST_WSTRING (fst $1, CHAR16_T), snd $1}
+|   string32_list     {CONST_WSTRING (fst $1, CHAR32_T), snd $1}
 ;
 
 string_constant:
@@ -739,8 +741,19 @@ wstring_list:
     CST_WSTRING                         { $1 }
 |   wstring_list one_string             { (fst $1) @ (fst $2), snd $1 }
 |   wstring_list CST_WSTRING            { (fst $1) @ (fst $2), snd $1 }
+|   one_string wstring_list             { (fst $1) @ (fst $2), snd $1 }
 /* Only the first string in the list needs an L, so L"a" "b" is the same
  * as L"ab" or L"a" L"b". */
+
+string16_list:
+    CST_STRING16                        { $1 }
+|   string16_list one_string            { (fst $1) @ (fst $2), snd $1 }
+|   string16_list CST_STRING16          { (fst $1) @ (fst $2), snd $1 }
+
+string32_list:
+    CST_STRING32                         { $1 }
+|   string32_list one_string             { (fst $1) @ (fst $2), snd $1 }
+|   string32_list CST_STRING32           { (fst $1) @ (fst $2), snd $1 }
 
 one_string:
     CST_STRING				{$1}

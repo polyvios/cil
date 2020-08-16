@@ -1823,6 +1823,8 @@ let makeGlobalVarinfo (isadef: bool) (vi: varinfo) : varinfo * bool =
 
     (* This may throw an exception Not_found *)
     let oldvi, oldloc = lookupGlobalVar lookupname in
+    if oldvi.vthreadlocal <> vi.vthreadlocal then 
+      ignore (E.log "_Thread_local appears in a declaration of '%s' but is not present in every declaration.\n" vi.vname);
     if debug then
       ignore (E.log "  %s already in the env at loc %a\n"
                 vi.vname d_loc oldloc);
@@ -3532,8 +3534,9 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               (TPtr(wchar_t, []))
               *)
 
-        | A.CONST_WSTRING (ws: int64 list) ->
-            let res = Const(CWStr ((* intlist_to_wstring *) ws)) in
+        | A.CONST_WSTRING (ws, wst) ->
+            let cil_wst = match wst with WCHAR_T -> Wchar_t | CHAR16_T -> Char16_t | CHAR32_T -> Char32_t in
+            let res = Const(CWStr ((* intlist_to_wstring *) ws, cil_wst)) in
             finishExp empty res (typeOf res)
 
         | A.CONST_STRING s ->
@@ -3560,7 +3563,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
             let a, b = (interpret_character_constant char_list) in
             finishExp empty (Const a) b
 
-        | A.CONST_WCHAR char_list ->
+        | A.CONST_WCHAR (char_list, wct) ->
             (* matth: I can't see a reason for a list of more than one char
              * here, since the kinteger64 below will take only the lower 16
              * bits of value.  ('abc' makes sense, because CHAR constants have
@@ -3568,18 +3571,14 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
              * the value.  But L'abc' has type wchar, and so is equivalent to
              * L'c').  But gcc allows L'abc', so I'll leave this here in case
              * I'm missing some architecture dependent behavior. *)
-	          let value = reduce_multichar !wcharType char_list in
-	          let result = kinteger64 !wcharKind value in
-            finishExp empty result (typeOf result)
 
-        | A.CONST_CHAR16 char_list -> 
-            let value = reduce_multichar !char16Type char_list in
-            let result = kinteger64 !char16Kind value in
-            finishExp empty result (typeOf result)
-        
-        | A.CONST_CHAR32 char_list -> 
-            let value = reduce_multichar !char32Type char_list in
-            let result = kinteger64 !char32Kind value in
+            let wcType, wcKind = match wct with 
+              | WCHAR_T -> !wcharType, !wcharKind 
+              | CHAR16_T -> !char16Type, !char16Kind 
+              | CHAR32_T -> !char32Type, !char32Kind 
+            in 
+	          let value = reduce_multichar wcType char_list in
+	          let result = kinteger64 !wcharKind value in
             finishExp empty result (typeOf result)
             
         | A.CONST_FLOAT str -> begin
@@ -5256,11 +5255,11 @@ and doInit
    * important. *)
   | TArray(bt, leno, _),
       (A.NEXT_INIT,
-       (A.SINGLE_INIT(A.CONSTANT (A.CONST_WSTRING s)) |
+       (A.SINGLE_INIT(A.CONSTANT (A.CONST_WSTRING (s,_))) |
        A.COMPOUND_INIT
          [(A.NEXT_INIT,
            A.SINGLE_INIT(A.CONSTANT
-                           (A.CONST_WSTRING s)))])) :: restil
+                           (A.CONST_WSTRING (s, _))))])) :: restil
     when(let bt' = unrollType bt in
          match bt' with
            (* compare bt to wchar_t, ignoring signed vs. unsigned *)

@@ -536,9 +536,12 @@ rule initial =
                                              raise (InternalError
                                                      ("wide string: " ^
                                                       Printexc.to_string e))}
-(* |   "u\""       {try CST_STRING16(str lexbuf, currentLoc ())
+|   "u\""       {try CST_STRING16(str lexbuf, currentLoc ())
                   with e ->
-                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}   *)               
+                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}    
+|   "U\""       {try CST_STRING32(str lexbuf, currentLoc ())
+                  with e ->
+                    raise (InternalError ("wide string: " ^ Printexc.to_string e))}          
 |		floatnum		{CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
 |   complexnum  {CST_COMPLEX (Lexing.lexeme lexbuf, currentLoc ())}
 |		hexnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}

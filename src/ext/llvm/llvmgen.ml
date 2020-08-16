@@ -590,7 +590,7 @@ class llvmGeneratorClass : llvmGenerator = object (self)
     match c with
     | CInt64 (i, ik, _) -> LInt (i, ik)
     | CStr s -> LGetelementptr [ LGlobal (self#addString s); lzerop; lzerop ]
-    | CWStr ws -> LGetelementptr [ LGlobal (self#addWString ws); lzerop; lzerop ]
+    | CWStr (ws,_) -> LGetelementptr [ LGlobal (self#addWString ws); lzerop; lzerop ]
     | CChr c -> LInt (Int64.of_int (Char.code c), IInt)
     | CReal (f, fk, _) -> LFloat (f, fk)
     | CEnum (e, _, ei) -> LInt (intConstValue e, ei.ekind)

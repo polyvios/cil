@@ -542,6 +542,7 @@ and exp =
                           * [TArray(T)] produces an expression of type
                           * [TPtr(T)]. *)
 
+and wstring_type = | Wchar_t | Char16_t | Char32_t
 
 (** Literal constants *)
 and constant =
@@ -551,8 +552,8 @@ and constant =
                   * {!Cil.integer} or {!Cil.kinteger} to create these. Watch
                   * out for integers that cannot be represented on 64 bits.
                   * OCAML does not give Overflow exceptions. *)
-  | CStr of string (** String constant (of pointer type) *)
-  | CWStr of int64 list (** Wide string constant (of type "wchar_t *") *)
+  | CStr of string(** String constant (of pointer type) *)
+  | CWStr of int64 list * wstring_type (** Wide string constant (of type "wchar_t *") *)
   | CChr of char (** Character constant.  This has type int, so use
                   *  charConstToInt to read the value in case
                   *  sign-extension is needed. *)
@@ -1785,8 +1786,9 @@ let d_const () c =
       )
 
   | CStr(s) -> text ("\"" ^ escape_string s ^ "\"")
-  | CWStr(s) ->
+  | CWStr(s, st) ->
       (* text ("L\"" ^ escape_string s ^ "\"")  *)
+      let prefix = match st with Wchar_t -> "L" | Char16_t -> "u" | Char32_t -> "U" in
       (List.fold_left (fun acc elt ->
         acc ++
         if (elt >= Int64.zero &&
@@ -1795,7 +1797,7 @@ let d_const () c =
         else
           ( text (Printf.sprintf "\\x%LX\"" elt) ++ break ++
             (text "\""))
-      ) (text "L\"") s ) ++ text "\""
+      ) (text (prefix ^ "\"")) s ) ++ text "\""
       (* we cannot print L"\xabcd" "feedme" as L"\xabcdfeedme" --
        * the former has 7 wide characters and the later has 3. *)
 
@@ -1940,7 +1942,7 @@ let rec typeOf (e: exp) : typ =
      * have SizeOfStr for that *)
   | Const(CStr s) -> !stringLiteralType
 
-  | Const(CWStr s) -> TPtr(!wcharType,[])
+  | Const(CWStr (s,st)) -> TPtr((match st with Wchar_t -> !wcharType | Char16_t -> !char16Type | Char32_t -> !char32Type), [])
 
   | Const(CReal (_, fk, _)) -> TFloat(fk, [])
 
@@ -4815,23 +4817,23 @@ class plainCilPrinterClass =
       let d_plainconst () c =
         match c with
           CInt64(i, ik, so) ->
-	    let fmt = if isSigned ik then "%d" else "%x" in
+	          let fmt = if isSigned ik then "%d" else "%x" in
             dprintf "Int64(%s,%a,%s)"
               (Int64.format fmt i)
               d_ikind ik
               (match so with Some s -> s | _ -> "None")
-        | CStr(s) ->
+          | CStr(s) ->
             text ("CStr(\"" ^ escape_string s ^ "\")")
-        | CWStr(s) ->
+          | CWStr(s,_) ->
             dprintf "CWStr(%a)" d_const c
 
-        | CChr(c) -> text ("CChr('" ^ escape_char c ^ "')")
-        | CReal(f, fk, so) ->
+          | CChr(c) -> text ("CChr('" ^ escape_char c ^ "')")
+          | CReal(f, fk, so) ->
             dprintf "CReal(%f, %a, %s)"
               f
               d_fkind fk
               (match so with Some s -> s | _ -> "None")
-        | CEnum(_, s, _) -> text s
+          | CEnum(_, s, _) -> text s
       in
       text "Const(" ++ d_plainconst () c ++ text ")"
 

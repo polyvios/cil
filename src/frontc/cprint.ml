@@ -133,8 +133,9 @@ let print_commas nl fct lst =
 let print_string (s:string) =
   print ("\"" ^ escape_string s ^ "\"")
 
-let print_wstring (s: int64 list ) =
-  print ("L\"" ^ escape_wstring s ^ "\"")
+let print_wstring (s: int64 list ) (wst: Cabs.wchar_type) =
+  let prefix = match wst with WCHAR_T -> "L" | CHAR16_T -> "u" | CHAR32_T -> "U" in
+  print (prefix ^ "\"" ^ escape_wstring s ^ "\"")
 
 (*
 ** Base Type Printing
@@ -152,6 +153,13 @@ let rec print_specifiers (specs: spec_elem list) =
         | STATIC -> "static"
         | EXTERN -> "extern"
         | REGISTER -> "register")
+    | SpecThreadLocal -> printu "_Thread_local"
+    | SpecFun sf -> 
+        printu (match sf with
+          INLINE -> "inline"
+        | VIRTUAL -> "virtual"
+        | EXPLICIT -> "explicit"
+        | NORETURN -> "_Noreturn")
     | SpecCV cv ->
         printu (match cv with
         | CV_CONST -> "const"
@@ -177,6 +185,7 @@ and print_type_spec = function
   | Tint128 -> print "__int128 "
   | Tfloat -> print "float "
   | Tfloat128 -> print "__float128"
+  | Tcomplex128 -> print "__complex128"
   | Tdouble -> print "double "
   | Tsigned -> printu "signed"
   | Tunsigned -> print "unsigned "
@@ -517,9 +526,9 @@ and print_expression_level (lvl: int) (exp : expression) =
       | CONST_FLOAT r -> print r
       | CONST_COMPLEX r -> print r
       | CONST_CHAR c -> print ("'" ^ escape_wstring c ^ "'")
-      | CONST_WCHAR c -> print ("L'" ^ escape_wstring c ^ "'")
+      | CONST_WCHAR (c, wct) -> print ("L'" ^ escape_wstring c ^ "'") (*TODO*)
       | CONST_STRING s -> print_string s
-      | CONST_WSTRING ws -> print_wstring ws)
+      | CONST_WSTRING (ws, wst) -> print_wstring ws wst)
   | VARIABLE name ->
       comprint "variable";
       print name
