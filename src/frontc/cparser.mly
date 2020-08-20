@@ -238,6 +238,19 @@ let transformOffsetOf (speclist, dtype) member =
   let resultExpr = CAST (sizeofType, SINGLE_INIT addrExpr) in
   resultExpr
 
+let queue_to_int64_list queue = 
+  List.rev (Queue.fold (fun l e -> List.rev_append e l) [] queue)
+
+let queue_to_string queue = 
+  let buffer = Buffer.create (Queue.length queue) in
+  Queue.iter
+    (List.iter
+	    (fun value ->
+	      let char = int64_to_char value in
+	      Buffer.add_char buffer char))
+    queue;
+  Buffer.contents buffer
+
 %}
 
 %token <string * Cabs.cabsloc> IDENT
@@ -252,12 +265,12 @@ let transformOffsetOf (speclist, dtype) member =
 /* Each character is its own list element, and the terminating nul is not
    included in this list. */
 %token <int64 list * Cabs.cabsloc> CST_STRING
-%token <int64 list * Cabs.cabsloc> CST_WSTRING CST_STRING16 CST_STRING32
+%token <int64 list * Cabs.cabsloc> CST_WSTRING CST_STRING16 CST_STRING32 CST_U8STRING
 
 %token EOF
 %token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
 %token<Cabs.cabsloc> INT128 FLOAT128 COMPLEX COMPLEX128 /* C99 */
-%token<Cabs.cabsloc> NORETURN THREADLOCAL/* C11 */
+%token<Cabs.cabsloc> NORETURN THREADLOCAL ALIGNOFC11 /* ALIGNOF is the GCC attribute */ ALIGNAS /* C11 */
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER HIDDEN
@@ -328,7 +341,7 @@ let transformOffsetOf (speclist, dtype) member =
 %left	INF_INF SUP_SUP
 %left	PLUS MINUS
 %left	STAR SLASH PERCENT CONST RESTRICT VOLATILE COMPLEX HIDDEN
-%right	EXCLAM TILDE PLUS_PLUS MINUS_MINUS CAST RPAREN ADDROF SIZEOF ALIGNOF IMAG REAL CLASSIFYTYPE
+%right	EXCLAM TILDE PLUS_PLUS MINUS_MINUS CAST RPAREN ADDROF SIZEOF ALIGNOF ALIGNOFC11 IMAG REAL CLASSIFYTYPE
 %left 	LBRACKET
 %left	DOT ARROW LPAREN LBRACE
 %right  NAMED_TYPE     /* We'll use this to handle redefinitions of
@@ -345,7 +358,7 @@ let transformOffsetOf (speclist, dtype) member =
 %type <Cabs.attribute list> attributes attributes_with_asm asmattr
 %type <Cabs.statement> statement
 %type <Cabs.constant * cabsloc> constant
-%type <string * cabsloc> string_constant
+%type <int64 list Queue.t * Cabs.wchar_type * cabsloc> string_constant
 %type <Cabs.expression * cabsloc> expression
 %type <Cabs.expression> opt_expression
 %type <Cabs.init_expression> init_expression
@@ -353,8 +366,8 @@ let transformOffsetOf (speclist, dtype) member =
 %type <Cabs.expression list * cabsloc> paren_comma_expression
 %type <Cabs.expression list> arguments
 %type <Cabs.expression list> bracket_comma_expression
-%type <int64 list Queue.t * cabsloc> string_list
-%type <int64 list * cabsloc> wstring_list
+/* %type <int64 list Queue.t * cabsloc> string_list */
+/* %type <int64 list * cabsloc> wstring_list */
 
 %type <Cabs.initwhat * Cabs.init_expression> initializer
 %type <(Cabs.initwhat * Cabs.init_expression) list> initializer_list
@@ -413,11 +426,11 @@ global:
 | function_def                          { $1 }
 /*(* Some C header files ar shared with the C++ compiler and have linkage
    * specification *)*/
-| EXTERN string_constant declaration    { LINKAGE (fst $2, (*handleLoc*) (snd $2), [ $3 ]) }
-| EXTERN string_constant LBRACE globals RBRACE
-                                        { LINKAGE (fst $2, (*handleLoc*) (snd $2), $4)  }
+| EXTERN string_constant declaration    { let q,t,l = $2 in LINKAGE (queue_to_string q, (*handleLoc*) l, [ $3 ]) }
+| EXTERN string_constant LBRACE globals RBRACE 
+                                        { let q,t,l = $2 in LINKAGE (queue_to_string q, (*handleLoc*) l, $4)  }
 | ASM LPAREN string_constant RPAREN SEMICOLON
-                                        { GLOBASM (fst $3, (*handleLoc*) $1) }
+                                        { let q,t,l = $3 in GLOBASM (queue_to_string q, (*handleLoc*) $1) }
 | pragma                                { $1 }
 /* (* Old-style function prototype. This should be somewhere else, like in
     * "declaration". For now we keep it at global scope only because in local
@@ -539,6 +552,10 @@ unary_expression:   /*(* 6.5.3 *)*/
 		        {EXPR_ALIGNOF (fst $2), $1}
 |	 	ALIGNOF LPAREN type_name RPAREN
 		        {let b, d = $3 in TYPE_ALIGNOF (b, d), $1}
+|		ALIGNOFC11 unary_expression
+		        {EXPR_ALIGNOF_C11 (fst $2), $1}
+|	 	ALIGNOFC11 LPAREN type_name RPAREN
+		        {let b, d = $3 in TYPE_ALIGNOF_C11 (b, d), $1}
 |		PLUS cast_expression
 		        {UNARY (PLUS, fst $2), $1}
 |		MINUS cast_expression
@@ -700,50 +717,85 @@ constant:
 |   CST_WCHAR				{CONST_WCHAR (fst $1, WCHAR_T), snd $1}
 |   CST_CHAR16      {CONST_WCHAR (fst $1, CHAR16_T), snd $1}
 |   CST_CHAR32      {CONST_WCHAR (fst $1, CHAR32_T), snd $1}
-|   string_constant		        {CONST_STRING (fst $1), snd $1}
+|   string_constant     {
+        let queue, typ, location = $1 in
+        if typ = CHAR then
+          CONST_STRING (queue_to_string queue), location
+        else
+          CONST_WSTRING (queue_to_int64_list queue, typ), location
+    }
+/* |   string_constant		        {CONST_STRING (fst $1), snd $1}
 |   wstring_list			{CONST_WSTRING (fst $1, WCHAR_T), snd $1}
 |   string16_list     {CONST_WSTRING (fst $1, CHAR16_T), snd $1}
-|   string32_list     {CONST_WSTRING (fst $1, CHAR32_T), snd $1}
+|   string32_list     {CONST_WSTRING (fst $1, CHAR32_T), snd $1} */
 ;
 
-string_constant:
-/* Now that we know this constant isn't part of a wstring, convert it
-   back to a string for easy viewing. */
-    string_list                         {
-     let queue, location = $1 in
-     let buffer = Buffer.create (Queue.length queue) in
-     Queue.iter
-       (List.iter
-	  (fun value ->
-	    let char = int64_to_char value in
-	    Buffer.add_char buffer char))
-       queue;
-     Buffer.contents buffer, location
-   }
-;
 one_string_constant:
 /* Don't concat multiple strings.  For asm templates. */
     CST_STRING                          {intlist_to_string (fst $1) }
 ;
-string_list:
+string_constant:
     one_string                          {
       let queue = Queue.create () in
       Queue.add (fst $1) queue;
-      queue, snd $1
+      queue, CHAR, snd $1
     }
-|   string_list one_string              {
-      Queue.add (fst $2) (fst $1);
-      $1
+|   CST_WSTRING {
+      let queue = Queue.create () in
+      Queue.add (fst $1) queue;
+      queue, WCHAR_T, snd $1
+    }
+|   CST_STRING16 {
+      let queue = Queue.create () in
+      Queue.add (fst $1) queue;
+      queue, CHAR16_T, snd $1
+    }
+|   CST_STRING32 {
+      let queue = Queue.create () in
+      Queue.add (fst $1) queue;
+      queue, CHAR32_T, snd $1
+    }
+|   string_constant one_string              {
+      let queue, typ, loc = $1 in
+      Queue.add (fst $2) queue;
+      queue, typ, loc
+    }
+|   string_constant CST_WSTRING {
+      let queue, typ, loc = $1 in
+      Queue.add (fst $2) queue;
+      if typ <> CHAR && typ <> WCHAR_T then (
+        parse_error "Incompatible string literals";
+        raise Parsing.Parse_error)
+      else
+        queue, WCHAR_T, loc
+    }
+|   string_constant CST_STRING16 {
+      let queue, typ, loc = $1 in
+      Queue.add (fst $2) queue;
+      if typ <> CHAR && typ <> CHAR16_T then (
+        parse_error "Incompatible string literals";
+        raise Parsing.Parse_error)
+      else
+        queue, CHAR16_T, loc
+    }
+|   string_constant CST_STRING32 {
+      let queue, typ, loc = $1 in
+      Queue.add (fst $2) queue;
+      if typ <> CHAR && typ <> CHAR32_T then (
+        parse_error "Incompatible string literals";
+        raise Parsing.Parse_error)
+      else
+        queue, CHAR32_T, loc
     }
 ;
-
+/* 
 wstring_list:
     CST_WSTRING                         { $1 }
 |   wstring_list one_string             { (fst $1) @ (fst $2), snd $1 }
 |   wstring_list CST_WSTRING            { (fst $1) @ (fst $2), snd $1 }
 |   one_string wstring_list             { (fst $1) @ (fst $2), snd $1 }
 /* Only the first string in the list needs an L, so L"a" "b" is the same
- * as L"ab" or L"a" L"b". */
+ * as L"ab" or L"a" L"b". 
 
 string16_list:
     CST_STRING16                        { $1 }
@@ -753,7 +805,7 @@ string16_list:
 string32_list:
     CST_STRING32                         { $1 }
 |   string32_list one_string             { (fst $1) @ (fst $2), snd $1 }
-|   string32_list CST_STRING32           { (fst $1) @ (fst $2), snd $1 }
+|   string32_list CST_STRING32           { (fst $1) @ (fst $2), snd $1 } */
 
 one_string:
     CST_STRING				{$1}
@@ -981,6 +1033,9 @@ decl_spec_list:                         /* ISO 6.7 */
 |   attribute_nocv decl_spec_list_opt   { SpecAttr (fst $1) :: $2, snd $1 }
 /* specifier pattern variable (must be last in spec list) */
 |   AT_SPECIFIER LPAREN IDENT RPAREN    { [ SpecPattern(fst $3) ], $1 }
+                                        /* ISO 6.7.5 */
+|   ALIGNAS unary_expression decl_spec_list_opt            { SpecAttr ("alignas", [fst $2]) :: $3, $1 }
+|   ALIGNAS LPAREN type_name RPAREN decl_spec_list_opt     { let (b, d) = $3 in ((SpecAttr ("alignas", [TYPE_ALIGNOF_C11 (b,d)]) :: $5), $1) }
 ;
 /* (* In most cases if we see a NAMED_TYPE we must shift it. Thus we declare
     * NAMED_TYPE to have right associativity  *) */
@@ -1333,8 +1388,8 @@ attributes_with_asm:
     /* empty */                         { [] }
 |   attribute attributes_with_asm       { fst $1 :: $2 }
 |   ASM LPAREN string_constant RPAREN attributes
-                                        { ("__asm__",
-					   [CONSTANT(CONST_STRING (fst $3))]) :: $5 }
+                                        { let q,t,l = $3 in ("__asm__",
+					   [CONSTANT(CONST_STRING (queue_to_string q))]) :: $5 }
 ;
 
 /* things like __attribute__, but no const/volatile */
@@ -1400,7 +1455,7 @@ primary_attr:
 |   LPAREN attr RPAREN                  { $2 }
 |   IDENT IDENT                          { CALL(VARIABLE (fst $1), [VARIABLE (fst $2)]) }
 |   CST_INT                              { CONSTANT(CONST_INT (fst $1)) }
-|   string_constant                      { CONSTANT(CONST_STRING (fst $1)) }
+|   string_constant                      { let q,t,l = $1 in CONSTANT(CONST_STRING (queue_to_string q)) }
                                            /*(* Const when it appears in
                                             * attribute lists, is translated
                                             * to aconst *)*/
@@ -1446,6 +1501,8 @@ unary_attr:
 
 |   ALIGNOF unary_expression             {EXPR_ALIGNOF (fst $2) }
 |   ALIGNOF LPAREN type_name RPAREN      {let b, d = $3 in TYPE_ALIGNOF (b, d)}
+|   ALIGNOFC11 unary_expression             {EXPR_ALIGNOF_C11 (fst $2) }
+|   ALIGNOFC11 LPAREN type_name RPAREN      {let b, d = $3 in TYPE_ALIGNOF_C11 (b, d)}
 |   PLUS cast_attr                      {UNARY (PLUS, $2)}
 |   MINUS cast_attr                     {UNARY (MINUS, $2)}
 |   STAR cast_attr		        {UNARY (MEMOF, $2)}
@@ -1571,8 +1628,8 @@ asmoperandsne:
 |    asmoperandsne COMMA asmoperand     { $3 :: $1 }
 ;
 asmoperand:
-     asmopname string_constant LPAREN expression RPAREN    { ($1, fst $2, fst $4) }
-|    asmopname string_constant LPAREN error RPAREN         { ($1, fst $2, NOTHING ) }
+     asmopname string_constant LPAREN expression RPAREN    { let q,t,l = $2 in ($1, queue_to_string q, fst $4) }
+|    asmopname string_constant LPAREN error RPAREN         { let q,t,l = $2 in ($1, queue_to_string q, NOTHING ) }
 ;
 asminputs:
   /* empty */                { ([], []) }

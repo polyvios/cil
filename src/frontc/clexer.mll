@@ -171,6 +171,8 @@ let init_lexicon _ =
                         IDENT ("_inline", loc));
       ("_Noreturn", fun loc -> NORETURN loc);
       ("_Thread_local", fun loc -> THREADLOCAL loc);
+      ("_Alignof", fun loc -> ALIGNOFC11 loc);
+      ("_Alignas", fun loc -> ALIGNAS loc);
       ("__attribute__", fun loc -> ATTRIBUTE loc);
       ("__attribute", fun loc -> ATTRIBUTE loc);
 (*
@@ -466,8 +468,6 @@ let floatnum = (decfloat | hexfloat) floatsuffix?
 
 let complexnum = (decfloat | hexfloat) ((['i' 'I'] floatsuffix) | (floatsuffix? ['i' 'I']))
 
-let strprefix = "u8" | "L" | "u" | "U"
-
 let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
@@ -519,13 +519,19 @@ rule initial =
 |		"L'"			{ CST_WCHAR (chr lexbuf, currentLoc ()) }
 |   "u'"        {CST_CHAR16 (chr lexbuf, currentLoc ())}
 |   "U'"        {CST_CHAR32 (chr lexbuf, currentLoc ())}
-|		'"' | "u8\""			{ addLexeme lexbuf; (* '"' *)
+|		'"' 			{ addLexeme lexbuf; (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
  *  e.g. if it's the "world" in
  *     L"Hello, " "world"
  *  then it should be treated as wide even though there's no L immediately
  *  preceding it.  See test/small1/wchar5.c for a failure case. *)
                                           try CST_STRING (str lexbuf, currentLoc ())
+                                          with e ->
+                                             raise (InternalError
+                                                     ("str: " ^
+                                                      Printexc.to_string e))}
+|   "u8\""    { addLexeme lexbuf; (* '"' *)
+                                          try CST_U8STRING (str lexbuf, currentLoc ())
                                           with e ->
                                              raise (InternalError
                                                      ("str: " ^
@@ -707,9 +713,6 @@ and str = parse
 |	escape		{addLexeme lexbuf; lex_simple_escape str lexbuf}
 | universal_escape {addLexeme lexbuf; lex_universal_escape str lexbuf}
 |	_		{addLexeme lexbuf; lex_unescaped str lexbuf}
-
-and u8_str = parse 
-"u8" {}
 
 and chr =  parse
 	'\''	        {[]}

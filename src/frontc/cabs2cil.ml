@@ -2782,6 +2782,8 @@ and doAttr (a: A.attribute) : attribute list =
         | A.TYPE_SIZEOF (bt, dt) -> ASizeOf (doOnlyType bt dt)
         | A.EXPR_ALIGNOF e -> AAlignOfE (ae e)
         | A.TYPE_ALIGNOF (bt, dt) -> AAlignOf (doOnlyType bt dt)
+        | A.EXPR_ALIGNOF_C11 e -> AAlignOfE_C11 (ae e)
+        | A.TYPE_ALIGNOF_C11 (bt, dt) -> AAlignOf_C11 (doOnlyType bt dt)
         | A.BINARY(A.AND, aa1, aa2) ->
             ABinOp(LAnd, ae aa1, ae aa2)
         | A.BINARY(A.OR, aa1, aa2) ->
@@ -3751,6 +3753,19 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
           | _ -> e'
         in
         finishExp empty (AlignOfE(e'')) !typeOfSizeOf
+    | A.TYPE_ALIGNOF_C11 (bt, dt) ->
+        let typ = doOnlyType bt dt in
+        finishExp empty (AlignOf_C11(typ)) !typeOfSizeOf
+    | A.EXPR_ALIGNOF_C11 e ->
+        let (se, e', t) = doExp false e AExpLeaveArrayFun in
+        let e'' =
+          match e' with                 (* If we are taking the alignof an
+                                         * array we must drop the StartOf  *)
+            StartOf(lv) -> Lval(lv)
+
+          | _ -> e'
+        in
+        finishExp empty (AlignOfE_C11(e'')) !typeOfSizeOf
 
     | A.CAST ((specs, dt), ie) ->
         let s', dt', ie' = preprocessCast specs dt ie in

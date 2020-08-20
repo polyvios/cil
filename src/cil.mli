@@ -329,6 +329,9 @@ and attrparam =
   | AAlignOf of typ
   | AAlignOfE of attrparam
   | AAlignOfS of typsig
+  | AAlignOf_C11 of typ   (* We differentiate between the C11 _Alignof and the GCC __alignof__ *)
+  | AAlignOfE_C11 of attrparam
+  | AAlignOfS_C11 of typsig
   | AUnOp of unop * attrparam
   | ABinOp of binop * attrparam * attrparam
   | ADot of attrparam * string           (** a.foo **)
@@ -604,7 +607,9 @@ and exp =
     (** This corresponds to the GCC __alignof_. Has [unsigned int] type *)
   | AlignOfE   of exp
 
-
+  | AlignOf_C11 of typ
+  | AlignOfE_C11 of exp
+  
   | UnOp       of unop * exp * typ
     (** Unary operation. Includes the type of the result. *)
 

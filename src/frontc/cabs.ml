@@ -278,6 +278,8 @@ and expression =
   | TYPE_SIZEOF of specifier * decl_type
   | EXPR_ALIGNOF of expression
   | TYPE_ALIGNOF of specifier * decl_type
+  | EXPR_ALIGNOF_C11 of expression
+  | TYPE_ALIGNOF_C11 of specifier * decl_type
   | INDEX of expression * expression
   | MEMBEROF of expression * string
   | MEMBEROFPTR of expression * string
@@ -298,7 +300,7 @@ and constant =
      * doesn't happen we will convert it to an (escaped) string before
      * passing it to Cil. *)
 
-and wchar_type = WCHAR_T | CHAR16_T | CHAR32_T
+and wchar_type = WCHAR_T | CHAR16_T | CHAR32_T | CHAR
 
 and init_expression =
   | NO_INIT

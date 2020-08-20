@@ -328,6 +328,9 @@ and attrparam =
   | AAlignOf of typ
   | AAlignOfE of attrparam
   | AAlignOfS of typsig
+  | AAlignOf_C11 of typ   (* We differentiate between the C11 _Alignof and the GCC __alignof__ *)
+  | AAlignOfE_C11 of attrparam
+  | AAlignOfS_C11 of typsig
   | AUnOp of unop * attrparam
   | ABinOp of binop * attrparam * attrparam
   | ADot of attrparam * string           (** a.foo **)
@@ -513,6 +516,8 @@ and exp =
   | AlignOf    of typ                   (** Has [unsigned int] type *)
   | AlignOfE   of exp
 
+  | AlignOf_C11    of typ                   (** Has [unsigned int] type *)
+  | AlignOfE_C11   of exp
 
   | UnOp       of unop * exp * typ      (** Unary operation. Includes
                                             the type of the result *)
@@ -1863,7 +1868,7 @@ let getParenthLevel (e: exp) =
   | Lval(Mem _ , _) -> derefStarLevel (* 20 *)
   | Lval(Var _, (Field _|Index _)) -> indexLevel (* 20 *)
   | SizeOf _ | SizeOfE _ | SizeOfStr _ -> 20
-  | AlignOf _ | AlignOfE _ -> 20
+  | AlignOf _ | AlignOfE _ | AlignOf_C11 _ | AlignOfE_C11 _ -> 20
 
   | Lval(Var _, NoOffset) -> 0        (* Plain variables *)
   | Const _ -> 0                        (* Constants *)
@@ -1874,7 +1879,7 @@ let getParenthLevelAttrParam (a: attrparam) =
   match a with
     AInt _ | AStr _ | ACons _ -> 0
   | ASizeOf _ | ASizeOfE _ | ASizeOfS _ -> 20
-  | AAlignOf _ | AAlignOfE _ | AAlignOfS _ -> 20
+  | AAlignOf _ | AAlignOfE _ | AAlignOfS _ | AAlignOf_C11 _ | AAlignOfE_C11 _ | AAlignOfS_C11 _ -> 20
   | AUnOp (uo, _) -> getParenthLevel (UnOp(uo, zero, intType))
   | ABinOp (bo, _, _) -> getParenthLevel (BinOp(bo, zero, zero, intType))
   | AAddrOf _ -> 30
@@ -1951,7 +1956,7 @@ let rec typeOf (e: exp) : typ =
   | Imag e -> typeOfRealAndImagComponents @@ typeOf e
   | Lval(lv) -> typeOfLval lv
   | SizeOf _ | SizeOfE _ | SizeOfStr _ -> !typeOfSizeOf
-  | AlignOf _ | AlignOfE _ -> !typeOfSizeOf
+  | AlignOf _ | AlignOfE _ | AlignOf_C11 _ | AlignOfE_C11 _ -> !typeOfSizeOf
   | UnOp (_, _, t)
   | BinOp (_, _, _, t)
   | Question (_, _, _, t)
@@ -2253,7 +2258,7 @@ let rec alignOf_int t =
     | TFun _ as t -> raise (SizeOfError ("function", t))
     | TVoid _ as t -> raise (SizeOfError ("void", t))
   in
-  match filterAttributes "aligned" (typeAttrs t) with
+  match filterAttributes "aligned" (typeAttrs t) @ filterAttributes "alignas" (typeAttrs t) with
     [] ->
       (* no __aligned__ attribute, so get the default alignment *)
       alignOfType ()
@@ -2266,7 +2271,15 @@ let rec alignOf_int t =
         ignore (warn "ignoring duplicate align attributes on %a"
                   (!pd_type) t);
       match intOfAttrparam a with
-        Some n -> n
+      | Some 0 -> alignOfType ()
+      | Some n -> 
+        let is_power_of_two n = 
+          let log2 = (log10 (float_of_int n)) /. (log10 2.) in 
+          ceil log2 = floor log2
+        in
+        if not (is_power_of_two n) then
+          alignOfType (ignore(warn "Invalid alignment value specified by attribute %a\n" (!pd_attr) at))
+        else n
       | None ->
           ignore (warn "alignment attribute \"%a\" not understood on %a"
                     (!pd_attr) at (!pd_type) t);
@@ -2300,7 +2313,7 @@ and intOfAttrparam (a:attrparam) : int option =
     | ASizeOf(t) ->
         let bs = bitsSizeOf t in
         bs / 8
-    | AAlignOf(t) ->
+    | AAlignOf(t) | AAlignOf_C11(t)->
         alignOf_int t
     | _ -> raise (SizeOfError ("", voidType))
   in
@@ -2664,7 +2677,8 @@ and constFold (machdep: bool) (e: exp) : exp =
   end
   | SizeOfE e when machdep -> constFold machdep (SizeOf (typeOf e))
   | SizeOfStr s when machdep -> kinteger !kindOfSizeOf (1 + String.length s)
-  | AlignOf t when machdep -> kinteger !kindOfSizeOf (alignOf_int t)
+  | AlignOf t 
+  | AlignOf_C11 t when machdep -> kinteger !kindOfSizeOf (alignOf_int t)
   | AlignOfE e when machdep -> begin
       (* The alignment of an expression is not always the alignment of its
        * type. I know that for strings this is not true *)
@@ -2674,6 +2688,15 @@ and constFold (machdep: bool) (e: exp) : exp =
             (* For an array, it is the alignment of the array ! *)
       | _ -> constFold machdep (AlignOf (typeOf e))
   end
+  | AlignOfE_C11 e when machdep -> begin
+    (* The alignment of an expression is not always the alignment of its
+     * type. I know that for strings this is not true *)
+    match e with
+      Const (CStr _) when not !msvcMode ->
+        kinteger !kindOfSizeOf !M.theMachine.M.alignof_str
+          (* For an array, it is the alignment of the array ! *)
+    | _ -> constFold machdep (AlignOf_C11 (typeOf e))
+end
 
   | CastE(it,
           AddrOf (Mem (CastE(TPtr(bt, _), z)), off))
@@ -2826,7 +2849,7 @@ let rec isConstant = function
   | Lval _ -> false
   | Real e -> isConstant e
   | Imag e -> isConstant e
-  | SizeOf _ | SizeOfE _ | SizeOfStr _ | AlignOf _ | AlignOfE _ -> true
+  | SizeOf _ | SizeOfE _ | SizeOfStr _ | AlignOf _ | AlignOfE _ | AlignOf_C11 _ | AlignOfE_C11 _ -> true
   | CastE (_, e) -> isConstant e
   | AddrOf (Var vi, off) | StartOf (Var vi, off)
         -> vi.vglob && isConstantOffset off
@@ -3518,6 +3541,10 @@ class defaultCilPrinterClass : cilPrinter = object (self)
         text "__alignof__(" ++ self#pType None () t ++ chr ')'
     | AlignOfE (e) ->
         text "__alignof__(" ++ self#pExp () e ++ chr ')'
+    | AlignOf_C11 (t) ->
+        text "_Alignof(" ++ self#pType None () t ++ chr ')'
+    | AlignOfE_C11 (e) ->
+        text "_Alignof(" ++ self#pExp () e ++ chr ')'
     | AddrOf(lv) ->
         text "& " ++ (self#pLvalPrec addrOfLevel () lv)
     | AddrOfLabel(sref) -> begin
@@ -4496,6 +4523,10 @@ class defaultCilPrinterClass : cilPrinter = object (self)
     | "volatile", [] -> text "volatile", false
     | "restrict", [] -> text "__restrict", false
     | "c_noreturn", [] -> text "_Noreturn", false
+    | "alignas", args ->
+        text "_Alignas("
+          ++ docList (self#pAttrParam ()) () args
+          ++ text ")", false
     | "missingproto", [] -> text "/* missing proto */", false
     | "cdecl", [] when !msvcMode -> text "__cdecl", false
     | "stdcall", [] when !msvcMode -> text "__stdcall", false
@@ -4574,6 +4605,9 @@ class defaultCilPrinterClass : cilPrinter = object (self)
     | AAlignOfE a -> text "__alignof__(" ++ self#pAttrParam () a ++ text ")"
     | AAlignOf t -> text "__alignof__(" ++ self#pType None () t ++ text ")"
     | AAlignOfS ts -> text "__alignof__(<typsig>)"
+    | AAlignOf_C11 t ->  text "_Alignof(" ++ self#pType None () t ++ text ")"
+    | AAlignOfE_C11 a -> text "_Alignof(" ++ self#pAttrParam () a ++ text ")"
+    | AAlignOfS_C11 ts -> text "_Alignof(<typsig>)"
     | AUnOp(u,a1) ->
         (d_unop () u) ++ chr ' ' ++ (self#pAttrPrec level () a1)
 
@@ -4879,6 +4913,10 @@ class plainCilPrinterClass =
       text "__alignof__(" ++ self#pType None () t ++ chr ')'
   | AlignOfE (e) ->
       text "__alignof__(" ++ self#pExp () e ++ chr ')'
+  | AlignOf_C11 (t) ->
+      text "_Alignof(" ++ self#pType None () t ++ chr ')'
+  | AlignOfE_C11 (e) ->
+      text "_Alignof(" ++ self#pExp () e ++ chr ')'
   | Imag e ->
       text "__imag__(" ++ self#pExp () e ++ chr ')'
   | Real e ->
@@ -5378,6 +5416,12 @@ and childrenExp (vis: cilVisitor) (e: exp) : exp =
   | AlignOfE e1 ->
       let e1' = vExp e1 in
       if e1' != e1 then AlignOfE e1' else e
+  | AlignOf_C11 t ->
+      let t' = vTyp t in
+      if t' != t then AlignOf_C11 t' else e
+  | AlignOfE_C11 e1 ->
+      let e1' = vExp e1 in
+      if e1' != e1 then AlignOfE_C11 e1' else e
   | Lval lv ->
       let lv' = vLval lv in
       if lv' != lv then Lval lv' else e
@@ -5726,7 +5770,13 @@ and childrenAttrparam (vis: cilVisitor) (aa: attrparam) : attrparam =
     | AAlignOfE e ->
         let e' = fAttrP e in
         if e' != e then AAlignOfE e' else aa
-    | ASizeOfS _ | AAlignOfS _ ->
+    | AAlignOf_C11 t ->
+        let t' = fTyp t in
+        if t' != t then AAlignOf_C11 t' else aa
+    | AAlignOfE_C11 e ->
+        let e' = fAttrP e in
+        if e' != e then AAlignOfE_C11 e' else aa    
+    | ASizeOfS _ | AAlignOfS _ | AAlignOfS_C11 _ ->
         ignore (warn "Visitor inside of a type signature.");
         aa
     | AUnOp (uo, e1) ->
@@ -6135,6 +6185,7 @@ class typeSigVisitor(typeSigConverter: typ->typsig) = object
     match ap with
       | ASizeOf t -> ChangeTo (ASizeOfS (typeSigConverter t))
       | AAlignOf t -> ChangeTo (AAlignOfS (typeSigConverter t))
+      | AAlignOf_C11 t -> ChangeTo (AAlignOfS_C11 (typeSigConverter t))
       | _ -> DoChildren
 end
 

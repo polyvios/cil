@@ -525,6 +525,13 @@ and childrenExpression vis e =
       let s' = visitCabsSpecifier vis s in
       let dt' = visitCabsDeclType vis false dt in
       if s' != s || dt' != dt then TYPE_ALIGNOF (s' ,dt') else e
+  | EXPR_ALIGNOF_C11 (e1) ->
+      let e1' = ve e1 in
+      if e1' != e1 then EXPR_ALIGNOF_C11 (e1') else e
+  | TYPE_ALIGNOF_C11 (s, dt) ->
+      let s' = visitCabsSpecifier vis s in
+      let dt' = visitCabsDeclType vis false dt in
+      if s' != s || dt' != dt then TYPE_ALIGNOF_C11 (s' ,dt') else e
   | INDEX (e1, e2) ->
       let e1' = ve e1 in
       let e2' = ve e2 in
