@@ -130,11 +130,11 @@ let print_commas nl fct lst =
   print_list (fun () -> print ","; if nl then new_line() else space()) fct lst;
   print_maybe ","
 
-let print_string (s:string) =
+let print_string (s:string) (enc: encoding) =
   print ("\"" ^ escape_string s ^ "\"")
 
 let print_wstring (s: int64 list ) (wst: Cabs.wchar_type) =
-  let prefix = match wst with WCHAR_T -> "L" | CHAR16_T -> "u" | CHAR32_T -> "U" in
+  let prefix = match wst with WCHAR_T -> "L" | CHAR16_T -> "u" | CHAR32_T -> "U" | _ -> Errormsg.s ("Error in print_wstring: not a wchar type") in
   print (prefix ^ "\"" ^ escape_wstring s ^ "\"")
 
 (*
@@ -527,7 +527,7 @@ and print_expression_level (lvl: int) (exp : expression) =
       | CONST_COMPLEX r -> print r
       | CONST_CHAR c -> print ("'" ^ escape_wstring c ^ "'")
       | CONST_WCHAR (c, wct) -> print ("L'" ^ escape_wstring c ^ "'") (*TODO*)
-      | CONST_STRING s -> print_string s
+      | CONST_STRING (s, enc) -> print_string s enc
       | CONST_WSTRING (ws, wst) -> print_wstring ws wst)
   | VARIABLE name ->
       comprint "variable";

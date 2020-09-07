@@ -300,10 +300,10 @@ class stringVisitor
 
   method! vexpr e = begin
     match e with
-        Const(CStr s) ->
+        Const(CStr (s, _)) ->
 (*           ignore (E.log "String without cast: %a\n" d_plainexp e); *)
           ChangeTo(global4String s false)
-      | CastE(t, Const(CStr s)) ->
+      | CastE(t, Const(CStr (s, _))) ->
           let taint =  baseTypeContainsSmallocAttribute t in
 (*           ignore (E.log "%stainted String: %a\n"  *)
 (*                     (if taint then "" else "Un") d_plainexp e); *)

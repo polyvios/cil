@@ -242,6 +242,7 @@ and typ =
 
   | TBuiltin_va_list of attributes
             (** This is the same as the gcc's type with the same name *)
+  | TDefault
 
 (**
  There are a number of functions for querying the kind of a type. These are
@@ -640,10 +641,13 @@ and exp =
      * not sure which one to use. In C this operation is implicit, the
      * [StartOf] operator is not printed. We have it in CIL because it makes
      * the typing rules simpler. *)
+  | Generic of exp * ((typ * exp) list)
 
 (** {b Constants.} *)
 
 and wstring_type = | Wchar_t | Char16_t | Char32_t
+
+and encoding = No_encoding | Utf8
 
 (** Literal constants *)
 and constant =
@@ -653,7 +657,7 @@ and constant =
      * constant as, for example, 0xF instead of 15.) Use {!Cil.integer} or
      * {!Cil.kinteger} to create these. Watch out for integers that cannot be
      * represented on 64 bits. OCAML does not give Overflow exceptions. *)
-  | CStr of string
+  | CStr of string * encoding
     (** String constant. The escape characters inside the string have been
      * already interpreted. This constant has pointer to character type! The
      * only case when you would like a string literal to have an array type

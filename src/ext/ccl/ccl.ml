@@ -1055,7 +1055,7 @@ let rec evaluateExp (e : exp) (state : state) : summary =
         end;
         SFacts tFacts
       end
-  | Const (CStr s) ->
+  | Const (CStr (s, _)) ->
       SFacts (FactSet.singleton ("*", ANT 0))
   | Const _ ->
       begin

@@ -277,6 +277,7 @@ and typ =
 
   | TBuiltin_va_list of attributes
             (** This is the same as the gcc's type with the same name *)
+  | TDefault
 
 (** Various kinds of integers *)
 and ikind =
@@ -546,8 +547,11 @@ and exp =
                           * It is not printed. Given an lval of type
                           * [TArray(T)] produces an expression of type
                           * [TPtr(T)]. *)
+  | Generic of exp * ((typ * exp) list)
 
 and wstring_type = | Wchar_t | Char16_t | Char32_t
+
+and encoding = No_encoding | Utf8
 
 (** Literal constants *)
 and constant =
@@ -557,7 +561,7 @@ and constant =
                   * {!Cil.integer} or {!Cil.kinteger} to create these. Watch
                   * out for integers that cannot be represented on 64 bits.
                   * OCAML does not give Overflow exceptions. *)
-  | CStr of string(** String constant (of pointer type) *)
+  | CStr of string * encoding (** String constant (of pointer type) *)
   | CWStr of int64 list * wstring_type (** Wide string constant (of type "wchar_t *") *)
   | CChr of char (** Character constant.  This has type int, so use
                   *  charConstToInt to read the value in case
@@ -1422,7 +1426,7 @@ type attributeClass =
 let attributeHash: (string, attributeClass) H.t =
   let table = H.create 13 in
   List.iter (fun a -> H.add table a (AttrName false))
-    [ "section"; "constructor"; "destructor"; "unused"; "used"; "weak";
+    [ "section"; "constructor"; "destructor"; "unused"; "used"; "weak"; 
       "no_instrument_function"; "alias"; "no_check_memory_usage";
       "exception"; "model"; (* "restrict"; *)
       "aconst"; "__asm__" (* Gcc uses this to specify the name to be used in
@@ -1436,8 +1440,8 @@ let attributeHash: (string, attributeClass) H.t =
 
   List.iter (fun a -> H.add table a (AttrFunType false))
     [ "format"; "regparm"; "longcall";
-      "noinline"; "always_inline"; "gnu_inline"; "leaf"; 
-      "artificial"; "warn_unused_result"; "nonnull"; "c_noreturn";
+      "noinline"; "always_inline"; "gnu_inline"; "leaf"; "c_noreturn";
+      "artificial"; "warn_unused_result"; "nonnull";
     ];
 
   List.iter (fun a -> H.add table a (AttrFunType true))
@@ -1532,6 +1536,7 @@ let rec typeAttrs = function
   | TEnum (enum, a) -> addAttributes enum.eattr a
   | TFun (_, _, _, a) -> a
   | TBuiltin_va_list a -> a
+  | TDefault -> []
 
 
 let setTypeAttrs t a =
@@ -1546,6 +1551,7 @@ let setTypeAttrs t a =
   | TEnum (enum, _) -> TEnum (enum, a)
   | TFun (r, args, v, _) -> TFun(r,args,v,a)
   | TBuiltin_va_list _ -> TBuiltin_va_list a
+  | TDefault -> TDefault
 
 
 let typeAddAttributes a0 t =
@@ -1568,6 +1574,7 @@ begin
       | TComp (comp, a) -> TComp (comp, add a)
       | TNamed (t, a) -> TNamed (t, add a)
       | TBuiltin_va_list a -> TBuiltin_va_list (add a)
+      | TDefault -> TDefault
 end
 
 let typeRemoveAttributes (anl: string list) t =
@@ -1583,6 +1590,7 @@ let typeRemoveAttributes (anl: string list) t =
   | TComp (comp, a) -> TComp (comp, drop a)
   | TNamed (t, a) -> TNamed (t, drop a)
   | TBuiltin_va_list a -> TBuiltin_va_list (drop a)
+  | TDefault -> TDefault
 
 let unrollType (t: typ) : typ =
   let rec withAttrs (al: attributes) (t: typ) : typ =
@@ -1652,7 +1660,7 @@ let getComplexFkind = function
 let var vi : lval = (Var vi, NoOffset)
 (* let assign vi e = Instrs(Set (var vi, e), lu) *)
 
-let mkString s = Const(CStr s)
+let mkString s = Const(CStr (s, No_encoding))
 
 
 let mkWhile ~(guard:exp) ~(body: stmt list) : stmt list =
@@ -1790,7 +1798,7 @@ let d_const () c =
           text (prefix ^ (Int64.to_string i ^ suffix))
       )
 
-  | CStr(s) -> text ("\"" ^ escape_string s ^ "\"")
+  | CStr(s, enc) -> let prefix = match enc with No_encoding -> "" | Utf8 -> "u8" in text (prefix ^ "\"" ^ escape_string s ^ "\"")
   | CWStr(s, st) ->
       (* text ("L\"" ^ escape_string s ^ "\"")  *)
       let prefix = match st with Wchar_t -> "L" | Char16_t -> "u" | Char32_t -> "U" in
@@ -1872,6 +1880,7 @@ let getParenthLevel (e: exp) =
 
   | Lval(Var _, NoOffset) -> 0        (* Plain variables *)
   | Const _ -> 0                        (* Constants *)
+  | Generic _ -> 0 (*TODO*)
 
 
 let getParenthLevelAttrParam (a: attrparam) =
@@ -1945,7 +1954,7 @@ let rec typeOf (e: exp) : typ =
     (* The type of a string is a pointer to characters ! The only case when
      * you would want it to be an array is as an argument to sizeof, but we
      * have SizeOfStr for that *)
-  | Const(CStr s) -> !stringLiteralType
+  | Const(CStr (_, _)) -> !stringLiteralType
 
   | Const(CWStr (s,st)) -> TPtr((match st with Wchar_t -> !wcharType | Char16_t -> !char16Type | Char32_t -> !char32Type), [])
 
@@ -1968,6 +1977,7 @@ let rec typeOf (e: exp) : typ =
         TArray (t,_, a) -> TPtr(t, a)
      | _ -> E.s (E.bug "typeOf: StartOf on a non-array")
   end
+  | Generic (e, lst) -> match lst with (t, e1) :: rest -> typeOf e1 | _ -> voidType
 
 and typeOfInit (i: init) : typ =
   match i with
@@ -2257,6 +2267,7 @@ let rec alignOf_int t =
 
     | TFun _ as t -> raise (SizeOfError ("function", t))
     | TVoid _ as t -> raise (SizeOfError ("void", t))
+    | TDefault -> raise (SizeOfError ("default", t))
   in
   match filterAttributes "aligned" (typeAttrs t) @ filterAttributes "alignas" (typeAttrs t) with
     [] ->
@@ -2266,25 +2277,46 @@ let rec alignOf_int t =
       ignore (warn "ignoring recursive align attributes on %a"
                 (!pd_type) t);
       alignOfType ()
-  | (Attr(_, [a]) as at)::rest -> begin
-      if rest <> [] then
-        ignore (warn "ignoring duplicate align attributes on %a"
-                  (!pd_type) t);
-      match intOfAttrparam a with
-      | Some 0 -> alignOfType ()
+  | (Attr(_, [a]) as at)::rest -> 
+    let is_power_of_two n = 
+      let log2 = (log10 (float_of_int n)) /. (log10 2.) in 
+      ceil log2 = floor log2
+    in
+    let rec strictest_alignment (current:int) (lst:attribute list) = 
+      match lst with
+        [] -> current
+      | (Attr(_, [a]) as at)::rest -> begin
+          match intOfAttrparam a with 
+            Some 0 -> strictest_alignment current rest
+          | Some n -> 
+            if not (is_power_of_two n) then begin
+              ignore(warn "Invalid alignment value specified by attribute %a\n" (!pd_attr) at);
+              strictest_alignment current rest 
+            end
+            else strictest_alignment (max current n) rest
+          | None -> 
+            ignore (warn "alignment attribute \"%a\" not understood on %a" (!pd_attr) at (!pd_type) t);
+            strictest_alignment current rest
+          end
+      | Attr(_, []) :: rest -> 
+        !M.theMachine.M.alignof_aligned
+      | at ::_ ->
+        ignore (warn "alignment attribute \"%a\" not understood on %a"
+                  (!pd_attr) at (!pd_type) t);
+        strictest_alignment current rest
+    in
+    let current = match intOfAttrparam a with
+        Some 0 -> alignOfType ()
       | Some n -> 
-        let is_power_of_two n = 
-          let log2 = (log10 (float_of_int n)) /. (log10 2.) in 
-          ceil log2 = floor log2
-        in
         if not (is_power_of_two n) then
           alignOfType (ignore(warn "Invalid alignment value specified by attribute %a\n" (!pd_attr) at))
         else n
       | None ->
-          ignore (warn "alignment attribute \"%a\" not understood on %a"
-                    (!pd_attr) at (!pd_type) t);
-          alignOfType ()
-    end
+        ignore (warn "alignment attribute \"%a\" not understood on %a"
+                (!pd_attr) at (!pd_type) t);
+        alignOfType ()
+    in 
+    strictest_alignment current rest
    | Attr(_, [])::rest ->
        (* aligned with no arg means a power of two at least as large as
           any alignment on the system.*)
@@ -2579,6 +2611,7 @@ and bitsSizeOf t =
       0
 
   | TFun _ -> raise (SizeOfError ("function", t))
+  | TDefault -> raise (SizeOfError("default", t))
 
 
 and addTrailing nrbits roundto =
@@ -2856,6 +2889,8 @@ let rec isConstant = function
   | AddrOf (Mem e, off) | StartOf(Mem e, off)
         -> isConstant e && isConstantOffset off
   | AddrOfLabel _ -> true
+  | Generic _ -> false (*TODO*)
+
 and isConstantOffset = function
     NoOffset -> true
   | Field(fi, off) -> isConstantOffset off
@@ -3535,7 +3570,7 @@ class defaultCilPrinterClass : cilPrinter = object (self)
     | Real e ->
         text "__real__(" ++ self#pExp () e ++ chr ')'
     | SizeOfStr s ->
-        text "sizeof(" ++ d_const () (CStr s) ++ chr ')'
+        text "sizeof(" ++ d_const () (CStr (s, No_encoding)) ++ chr ')'
 
     | AlignOf (t) ->
         text "__alignof__(" ++ self#pType None () t ++ chr ')'
@@ -3562,6 +3597,14 @@ class defaultCilPrinterClass : cilPrinter = object (self)
     end
 
     | StartOf(lv) -> self#pLval () lv
+
+    | Generic(e, lst) -> 
+        let rec print_generic_exp l doc =
+          match l with
+          | [] -> doc
+          | (t, e1) :: rest -> print_generic_exp rest (doc ++ text ", " ++ (self#pType None () t) ++ text ":" ++ self#pExp () e1)
+        in
+        text "_Generic(" ++ self#pExp () e ++ print_generic_exp lst nil ++ text ")"
 
   (* Print an expression, given the precedence of the context in which it
    * appears. *)
@@ -4499,6 +4542,7 @@ class defaultCilPrinterClass : cilPrinter = object (self)
        ++ self#pAttrs () a
         ++ text " "
         ++ name
+  | TDefault -> text "default"
 
 
   (**** PRINTING ATTRIBUTES *********)
@@ -4842,6 +4886,7 @@ class plainCilPrinterClass =
        end
    | TBuiltin_va_list a ->
        dprintf "TBuiltin_va_list(%a)" self#pAttrs a
+   | TDefault -> dprintf "TDefault"
 
 
   (* Some plain pretty-printers. Unlike the above these expose all the
@@ -4856,8 +4901,9 @@ class plainCilPrinterClass =
               (Int64.format fmt i)
               d_ikind ik
               (match so with Some s -> s | _ -> "None")
-          | CStr(s) ->
-            text ("CStr(\"" ^ escape_string s ^ "\")")
+          | CStr(s, enc) ->
+            let enc_string = match enc with No_encoding -> "_" | Utf8 -> "UTF8" in
+            text ("CStr(\"" ^ escape_string s ^ "\"," ^ enc_string ^ ")")
           | CWStr(s,_) ->
             dprintf "CWStr(%a)" d_const c
 
@@ -4908,7 +4954,7 @@ class plainCilPrinterClass =
   | SizeOfE (e) ->
       text "sizeofE(" ++ self#pExp () e ++ chr ')'
   | SizeOfStr (s) ->
-      text "sizeofStr(" ++ d_const () (CStr s) ++ chr ')'
+      text "sizeofStr(" ++ d_const () (CStr (s, No_encoding)) ++ chr ')'
   | AlignOf (t) ->
       text "__alignof__(" ++ self#pType None () t ++ chr ')'
   | AlignOfE (e) ->
@@ -4924,6 +4970,13 @@ class plainCilPrinterClass =
   | StartOf lv -> dprintf "StartOf(%a)" self#pLval lv
   | AddrOf (lv) -> dprintf "AddrOf(%a)" self#pLval lv
   | AddrOfLabel (sref) -> dprintf "AddrOfLabel(%a)" self#pStmt !sref
+  | Generic(e, lst) -> 
+      let rec print_generic_exp l doc =
+        match l with
+        | [] -> doc
+        | (t, e1) :: rest -> print_generic_exp rest (doc ++ text "," ++ (self#pType None () t) ++ text ":" ++ self#pExp () e1)
+      in
+      text "_Generic(" ++ self#pExp () e ++ text "," ++ print_generic_exp lst nil
 
 
 
@@ -5444,6 +5497,8 @@ and childrenExp (vis: cilVisitor) (e: exp) : exp =
   | StartOf lv ->
       let lv' = vLval lv in
       if lv' != lv then StartOf lv' else e
+  | Generic(e, lst) -> e (*TODO*)
+
 
 and visitCilInit (vis: cilVisitor) (forglob: varinfo)
                  (atoff: offset) (i: init) : init =
@@ -6235,6 +6290,7 @@ let rec typeSigWithAttrs ?(ignoreSign=false) doattr t =
       TSFun(typeSig rt, (Util.list_map_opt (fun (_, atype, _) -> (typeSig atype)) args), isva, doattr a)
   | TNamed(t, a) -> typeSigAddAttrs (doattr a) (typeSig t.ttype)
   | TBuiltin_va_list al -> TSBase (TBuiltin_va_list (doattr al))
+  | TDefault -> TSBase (TDefault)
 
 let typeSig t =
   typeSigWithAttrs (fun al -> al) t
@@ -6262,7 +6318,7 @@ let typeSigAttrs = function
 
 
 let dExp: doc -> exp =
-  fun d -> Const(CStr(sprint ~width:!lineLength d))
+  fun d -> Const(CStr(sprint ~width:!lineLength d, No_encoding))
 
 let dInstr: doc -> location -> instr =
   fun d l -> Asm([], [sprint ~width:!lineLength d], [], [], [], l)

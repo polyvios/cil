@@ -80,6 +80,7 @@ type typeSpecifier = (* Merge all specifiers into one type *)
   | Tenum of string * enum_item list option * attribute list
   | TtypeofE of expression                      (* GCC __typeof__ *)
   | TtypeofT of specifier * decl_type       (* GCC __typeof__ *)
+  | Tdefault
 
 and storage =
     NO_STORAGE | AUTO | STATIC | EXTERN | REGISTER
@@ -285,6 +286,7 @@ and expression =
   | MEMBEROFPTR of expression * string
   | GNU_BODY of block
   | EXPR_PATTERN of string     (* pattern variable, and name *)
+  | GENERIC of expression * ((specifier * expression) list)
 
 and constant =
   | CONST_INT of string   (* the textual representation *)
@@ -292,7 +294,7 @@ and constant =
   | CONST_COMPLEX of string (* the textual representation *)
   | CONST_CHAR of int64 list
   | CONST_WCHAR of int64 list * wchar_type
-  | CONST_STRING of string
+  | CONST_STRING of string * encoding
   | CONST_WSTRING of int64 list * wchar_type
     (* ww: wstrings are stored as an int64 list at this point because
      * we might need to feed the wide characters piece-wise into an
@@ -300,7 +302,8 @@ and constant =
      * doesn't happen we will convert it to an (escaped) string before
      * passing it to Cil. *)
 
-and wchar_type = WCHAR_T | CHAR16_T | CHAR32_T | CHAR
+and wchar_type = WCHAR_T | CHAR16_T | CHAR32_T | CHAR | CHAR_UTF8
+and encoding = NO_ENCODING | UTF8
 
 and init_expression =
   | NO_INIT

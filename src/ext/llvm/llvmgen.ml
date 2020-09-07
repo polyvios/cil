@@ -589,7 +589,7 @@ class llvmGeneratorClass : llvmGenerator = object (self)
   method mkConstant (c:constant) : llvmValue =
     match c with
     | CInt64 (i, ik, _) -> LInt (i, ik)
-    | CStr s -> LGetelementptr [ LGlobal (self#addString s); lzerop; lzerop ]
+    | CStr (s, _) -> LGetelementptr [ LGlobal (self#addString s); lzerop; lzerop ]
     | CWStr (ws,_) -> LGetelementptr [ LGlobal (self#addWString ws); lzerop; lzerop ]
     | CChr c -> LInt (Int64.of_int (Char.code c), IInt)
     | CReal (f, fk, _) -> LFloat (f, fk)

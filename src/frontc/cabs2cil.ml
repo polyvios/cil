@@ -1566,6 +1566,7 @@ let cabsTypeAddAttributes a0 t =
           | TComp (comp, a) -> TComp (comp, addA0To a)
           | TNamed (t, a) -> TNamed (t, addA0To a)
           | TBuiltin_va_list a -> TBuiltin_va_list (addA0To a)
+          | TDefault -> TDefault
   end
 
 
@@ -1823,8 +1824,12 @@ let makeGlobalVarinfo (isadef: bool) (vi: varinfo) : varinfo * bool =
 
     (* This may throw an exception Not_found *)
     let oldvi, oldloc = lookupGlobalVar lookupname in
-    if oldvi.vthreadlocal <> vi.vthreadlocal then 
-      ignore (E.log "_Thread_local appears in a declaration of '%s' but is not present in every declaration.\n" vi.vname);
+    if oldvi.vthreadlocal <> vi.vthreadlocal then begin
+      ignore(warn 
+      "_Thread_local appears in a declaration of '%s' but is not present in every declaration. Previous declaration: %a" 
+      vi.vname d_loc oldloc); 
+      oldvi.vthreadlocal <- false;
+    end;
     if debug then
       ignore (E.log "  %s already in the env at loc %a\n"
                 vi.vname d_loc oldloc);
@@ -2460,6 +2465,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
     | [A.Tcomplex128] -> TFloat(FComplexFloat128, [])
 
      (* Now the other type specifiers *)
+    | [A.Tdefault] -> TDefault
     | [A.Tnamed n] -> begin
         if n = "__builtin_va_list" &&
           !Machdep.theMachine.Machdep.__builtin_va_list then begin
@@ -2621,7 +2627,7 @@ let rec doSpecList (suggestedAnonName: string) (* This string will be part of
           match e' with
             StartOf(lv) -> typeOfLval lv
                 (* If this is a string literal, then we treat it as in sizeof*)
-          | Const (CStr s) -> begin
+          | Const (CStr (s, _)) -> begin
               match typeOf e' with
                 TPtr(bt, _) -> (* This is the type of array elements *)
                   TArray(bt, Some (SizeOfStr s), [])
@@ -2765,7 +2771,7 @@ and doAttr (a: A.attribute) : attribute list =
               | _ -> ACons (n', [])
             with Not_found -> ACons(n', [])
           end
-        | A.CONSTANT (A.CONST_STRING s) -> AStr s
+        | A.CONSTANT (A.CONST_STRING (s, _)) -> AStr s
         | A.CONSTANT (A.CONST_INT str) -> begin
             match parseInt str with
               Const (CInt64 (v64,_,_)) ->
@@ -3371,7 +3377,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
     | A.PAREN e -> E.s (bug "stripParen")
     | A.NOTHING when what = ADrop -> finishExp empty (integer 0) intType
     | A.NOTHING ->
-        let res = Const(CStr "exp_nothing") in
+        let res = Const(CStr ("exp_nothing", No_encoding)) in
         finishExp empty res (typeOf res)
 
     (* Do the potential lvalues first *)
@@ -3537,11 +3543,15 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               *)
 
         | A.CONST_WSTRING (ws, wst) ->
-            let cil_wst = match wst with WCHAR_T -> Wchar_t | CHAR16_T -> Char16_t | CHAR32_T -> Char32_t in
+            let cil_wst = 
+              match wst with 
+                WCHAR_T -> Wchar_t | CHAR16_T -> Char16_t | CHAR32_T -> Char32_t
+              | _ -> E.s ("Error in CONST_WSTRING: Not a wchar type");
+            in
             let res = Const(CWStr ((* intlist_to_wstring *) ws, cil_wst)) in
             finishExp empty res (typeOf res)
 
-        | A.CONST_STRING s ->
+        | A.CONST_STRING (s, enc) ->
             (* Maybe we burried __FUNCTION__ in there *)
             let s' =
               try
@@ -3558,7 +3568,8 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
                   s
               with Not_found -> s
             in
-            let res = Const(CStr s') in
+            let enc' = match enc with NO_ENCODING -> No_encoding | UTF8 -> Utf8 in
+            let res = Const(CStr (s', enc')) in
             finishExp empty res (typeOf res)
 
         | A.CONST_CHAR char_list ->
@@ -3578,6 +3589,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               | WCHAR_T -> !wcharType, !wcharKind 
               | CHAR16_T -> !char16Type, !char16Kind 
               | CHAR32_T -> !char32Type, !char32Kind 
+              | _ -> E.s ("Error in CONST_WCHAR: not a wchar type");
             in 
 	          let value = reduce_multichar wcType char_list in
 	          let result = kinteger64 !wcharKind value in
@@ -3611,7 +3623,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               ignore (E.log "float_of_string %s (%s)\n" str
                         (Printexc.to_string e));
               E.hadErrors := true;
-              let res = Const(CStr "booo CONS_FLOAT") in
+              let res = Const(CStr ("booo CONS_FLOAT", No_encoding)) in
               finishExp empty res (typeOf res)
             end
         end
@@ -3643,7 +3655,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               ignore (E.log "float_of_string_2 %s (%s)\n" baseint
                         (Printexc.to_string e));
               E.hadErrors := true;
-              let res = Const(CStr "booo CONS_FLOAT") in
+              let res = Const(CStr ("booo CONS_FLOAT", No_encoding)) in
               finishExp empty res (typeOf res)
             end
         end
@@ -3654,10 +3666,10 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
         finishExp empty (SizeOf(typ)) !typeOfSizeOf
 
       (* Intercept the sizeof("string") *)
-    | A.EXPR_SIZEOF (A.CONSTANT (A.CONST_STRING s)) -> begin
+    | A.EXPR_SIZEOF (A.CONSTANT (A.CONST_STRING (s, enc))) -> begin
         (* Process the string first *)
-        match doExp asconst (A.CONSTANT (A.CONST_STRING s)) (AExp None) with
-          _, Const(CStr s), _ ->
+        match doExp asconst (A.CONSTANT (A.CONST_STRING (s, enc))) (AExp None) with
+          _, Const(CStr (s, enc)), _ ->
             finishExp empty (SizeOfStr s) !typeOfSizeOf
         | _ -> E.s (bug "cabs2cil: sizeOfStr")
     end
@@ -4882,6 +4894,26 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
 
     | A.EXPR_PATTERN _ -> E.s (E.bug "EXPR_PATTERN in cabs2cil input")
 
+    | A.GENERIC (expr, lst) -> 
+        let get_exp tupel = match tupel with _, e, _ -> e in
+        let exp = get_exp (doExp false expr (AExp None)) in
+        let rec make_cil_list cabs_l cil_l = match cabs_l with 
+          | [] -> cil_l
+          | (s, e) :: rest -> make_cil_list rest (((doOnlyType s JUSTBASE),get_exp (doExp false e (AExp None))) :: cil_l) 
+        in
+        let cil_list = make_cil_list lst [] in
+        let exp_typ = typeOf exp in
+        let default_typ = ref voidType in
+        let typ = 
+          let rec get_typ l = match l with 
+            | (TDefault, e) :: rest -> default_typ := typeOf e; get_typ rest
+            | (t, e) :: rest -> if t = exp_typ then typeOf e else get_typ rest
+            | [] -> !default_typ
+          in
+          get_typ cil_list
+        in
+        finishExp empty (Generic(exp, (make_cil_list lst []))) typ
+
   with e when continueOnError -> begin
     (*ignore (E.log "error in doExp (%s)" (Printexc.to_string e));*)
     E.hadErrors := true;
@@ -5218,11 +5250,11 @@ and doInit
          * string into characters *)
   | TArray(bt, leno, _),
       (A.NEXT_INIT,
-       (A.SINGLE_INIT(A.CONSTANT (A.CONST_STRING s))|
+       (A.SINGLE_INIT(A.CONSTANT (A.CONST_STRING (s, enc)))|
        A.COMPOUND_INIT
          [(A.NEXT_INIT,
            A.SINGLE_INIT(A.CONSTANT
-                           (A.CONST_STRING s)))])) :: restil
+                           (A.CONST_STRING (s, enc))))])) :: restil
     when (match unrollType bt with
             TInt((IChar|IUChar|ISChar), _) -> true
           | TInt _ ->
@@ -5571,7 +5603,7 @@ and createGlobal (specs : (typ * storage * bool * bool * A.attribute list))
     (* Add the variable to the environment before doing the initializer
      * because it might refer to the variable itself *)
     if isFunctionType vi.vtype then begin
-      if vi.vthreadlocal then E.s (error "Invalid storage class '_Thread_local' for function %s" vi.vname);
+      if vi.vthreadlocal then ignore (error "Invalid storage class '_Thread_local' for function %s" vi.vname);
       if inite != A.NO_INIT  then
         E.s (error "Function declaration with initializer (%s)"
                vi.vname);
@@ -5787,7 +5819,7 @@ and createLocal ?allow_var_decl:(allow_var_decl=true) ((_, sto, _, _, _) as spec
           TArray(_,None, _), _, TArray(_, Some _, _) -> vi.vtype <- et
             (* Initializing a local array *)
         | TArray(TInt((IChar|IUChar|ISChar), _) as bt, None, a),
-             SingleInit(Const(CStr s)), _ ->
+             SingleInit(Const(CStr (s, enc))), _ ->
                vi.vtype <- TArray(bt,
                                   Some (integer (String.length s + 1)),
                                   a)
@@ -6249,7 +6281,8 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
             | Call (None, Lval (Var e, NoOffset), _, _) ->
                 (* See if this is exit, or if it has the noreturn attribute *)
                 if e.vname = "exit" then false
-                else if hasAttribute "noreturn" e.vattr then false
+                else if hasAttribute "noreturn" e.vattr 
+                  || hasAttribute "c_noreturn" (match !currentFunctionFDEC.svar.vtype with TFun(_,_,_,attr) -> attr | _ -> [])  then false
                 else true
             | Call _ -> true
             | Asm _ -> true
@@ -6347,8 +6380,8 @@ and doDecl (isglobal: bool) : A.definition -> chunk = function
                     ignore (warn "Body of function %s falls-through and cannot find an appropriate return value" !currentFunctionFDEC.svar.vname);
                     None
               in
-              if not (hasAttribute "noreturn"
-                        !currentFunctionFDEC.svar.vattr) then
+              if not (hasAttribute "noreturn" !currentFunctionFDEC.svar.vattr 
+                || hasAttribute "c_noreturn" (match !currentFunctionFDEC.svar.vtype with TFun(_,_,_,attr) -> attr | _ -> []) ) then
                 !currentFunctionFDEC.sbody.bstmts <-
                   !currentFunctionFDEC.sbody.bstmts
                   @ [mkStmt (Return(retval, endloc))]
