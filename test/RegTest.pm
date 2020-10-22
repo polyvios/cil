@@ -49,7 +49,7 @@ sub setUsr1Handler {
     $gotSigUsr1 = 0;
     $SIG{'USR1'} = \&usr1Handler;
 }
-    
+
 
                                 # Create an exception handler
 sub setInterruptHandler {
@@ -67,7 +67,7 @@ sub processInterrupt {
     if($interrupt) {
         $interrupt = 0;
         print "\n";
-        my $answer = 
+        my $answer =
             &promptYN("You pressed CTRL-C. Want to continue? (y/n): ",
                       'N');
         if($answer eq "Y") {
@@ -75,7 +75,7 @@ sub processInterrupt {
             return;
         }
 
-        $answer = 
+        $answer =
             &promptYN("Will exit now. Do you want to keep the log file? (y/n):"
                       , 'Y');
         if($answer eq "N") {
@@ -180,8 +180,8 @@ sub new {
     $self->{gory}       = $option{gory};
     $self->{verbose}    = $option{verbose};
     $self->{regrtest}   = $option{regrtest};
-    $self->{timeout}    = (defined($option{timeout}) ? $option{timeout} 
-                          : (defined($self->{DefaultTimeout}) 
+    $self->{timeout}    = (defined($option{timeout}) ? $option{timeout}
+                          : (defined($self->{DefaultTimeout})
                              ? $self->{DefaultTimeout} : 60));
 
     # Initialize the list of tests
@@ -242,26 +242,26 @@ Options:
   --gory                       Display lots of information about sub-processes
   --run|-r                     Recreate the database by running all the tests
   --dryrun|-n                  Show the commands that would be executed
-  --group                      <name> Run a group of tests. This option can be 
+  --group                      <name> Run a group of tests. This option can be
                                specified multiple times. Only the specified
                                groups are considered, if this option is
                                present. If the option is missing run all
                                enabled tests.
   --nogroup                    <name> Do not run a group of tests. This option
                                can be specified multiple times. Exclude from
-                               the executed tests the mentioned ones. This 
+                               the executed tests the mentioned ones. This
                                option is processed after all group options are
-                               processed. 
+                               processed.
   --listtests                  List the tests and their group memberships
-  --all                        Enable all tests, even those disabled by 
+  --all                        Enable all tests, even those disabled by
                                default.  Useful in --listtests -all
   --one                        <name> Run a single test
-  --param|-p=<pnames>          Create a report with values of the named 
+  --param|-p=<pnames>          Create a report with values of the named
                                parameters (separated by :). Use "ALL" for all
                                parameters. The available parameters are:
 $params
   --sort=<pnames>              Sort the report by the given parameters.
-  --log=<name>                 The name of a log file to operate on. 
+  --log=<name>                 The name of a log file to operate on.
   --logversions=<nr>           How many old versions of the log file to keep
   --stoponerror                Stop at the first error
   --showoutput                 Show the output on the console
@@ -288,7 +288,7 @@ sub extraOptions {
 
 #
 # Return a hash mapping parameter names either to 1 if the parameter is
-# numeric or to 0 
+# numeric or to 0
 sub availableParameters {
     my($self) = @_;
     return ('SUCCESS' => 1);
@@ -344,7 +344,7 @@ sub runCommand {
         $newcmd = "$command $arg";
 
         if ($stdoutFile) {
-            if ($self->{option}->{showoutput}) {
+            # if ($self->{option}->{showoutput}) {
                 # wrap up the command in some tees and subshells so the
                 # output will go to the specified files in addition to
                 # the terminal (or more generally, this process' stdout/err);
@@ -355,10 +355,10 @@ sub runCommand {
                           "(($newcmd || kill -USR1 $$) | ".
                           "tee $stdoutFile >&3) 2>&1 | ".
                           "tee $stderrFile >&4";
-            }
-            else {
-                $newcmd = "$newcmd 2>$stderrFile >$stdoutFile";
-            }
+            # }
+            # else {
+            #     $newcmd = "$newcmd 2>$stderrFile >$stdoutFile";
+            # }
         }
     }
 
@@ -373,7 +373,7 @@ sub runCommand {
         my $olddir = Cwd::cwd();
         if(chdir $dir) {
             my $res;
-            eval { 
+            eval {
                 local $SIG{ALRM} = sub { die "got timeout"; };
                 my $timeout = $self->{timeout};
                 if(defined $tst->{Timeout}) {
@@ -555,7 +555,7 @@ sub runTests {
         my $lfilestdout = Cwd::cwd() . "/__log.stdout";
         # Try to delete the file. If we cannot then somebody is hanging to
         # them and we will not see any output
-        if((-f $lfile && ! unlink $lfile) || 
+        if((-f $lfile && ! unlink $lfile) ||
            (-f $lfilestdout && ! unlink $lfilestdout)) {
             die "\nCannot delete $lfile or $lfilestdout. Some process is hanging on to them";
         }
@@ -566,7 +566,7 @@ sub runTests {
         } elsif (!$self->{regrtest}) {
             print "\n";
         }
-       
+
         my $extracmd = "";
         #if(defined ($self->{option}->{showoutput})) {
         #    $extracmd = " | tee $lfilestdout 2>$lfile ";
@@ -677,9 +677,9 @@ sub parseLogFile {
 }
 
 
-# 
+#
 # Show a list of test cases
-# Arguments: 
+# Arguments:
 #   - heading of the set of test cases
 #   - a list of test cases
 sub showList {
@@ -689,7 +689,7 @@ sub showList {
     @lst = sort {$a->{Name} cmp $b->{Name}} @lst;
     foreach $tst (@lst) {
         my $comm = defined($tst->{Comm}) ? "\n\t-$tst->{Comm}" : "";
-        my $errmsg = 
+        my $errmsg =
             defined($tst->{ErrorMsg}) ? "\n\t$tst->{ErrorMsg}" : "";
         print "  $tst->{Name}$comm$errmsg\n";
     }
@@ -702,7 +702,7 @@ sub showListHeader {
     my $ratio = $totalenabled == 0 ? 0 : 100 * $count / $totalenabled;
     printf "%s(%d)   %02d%% (%d / %d) [%d tests disabled]\n", $title,
            $code,
-           $ratio, $count, $totalenabled, 
+           $ratio, $count, $totalenabled,
            (scalar keys %$tests) - $totalenabled;
 }
 
@@ -711,7 +711,7 @@ sub processGroup {
     my $tstname;
     my $count = 0;
     my %tests = %{$self->{tests}};
-  ITER: 
+  ITER:
     foreach $tstname (keys %tests) {
         if((defined $tests{$tstname}->{Group})) {
             my $i;
@@ -719,7 +719,7 @@ sub processGroup {
             my $size = $#arr;
             for($i=0; $i <= $size; $i++) {
                 if($arr[$i] eq $group) {
-                    if(($toAdd ? 1 : 0) != 
+                    if(($toAdd ? 1 : 0) !=
                        ($tests{$tstname}{Enabled} ? 1 : 0)) {
                         $count++;
                     }
@@ -737,7 +737,7 @@ sub processGroup {
 }
 
 
-# A subroutine that deletes or renames a version of the log file 
+# A subroutine that deletes or renames a version of the log file
 # The first version is called <base>.1, ... where <base> is the current log
 # file
 sub deleteOrRenameLog {
@@ -747,7 +747,7 @@ sub deleteOrRenameLog {
         return;
     }
     if($version >= $self->{option}->{logversions}) {
-        # delete it 
+        # delete it
         unlink $verlogname;
         return;
     }
@@ -765,15 +765,15 @@ sub doit {
     my %tests = %{$self->{tests}};
     # Get the logfile name
     my $logFile = $self->{LogFile};
-    
-    # Go through the directory in which $logFile is and find all files with 
+
+    # Go through the directory in which $logFile is and find all files with
     # similar names
     my @existingLogFiles = ();
 
     my $logDir = ".";
     my $logBase;
     {
-        my ($base, $dir, $ext) = 
+        my ($base, $dir, $ext) =
           File::Basename::fileparse($logFile, "");
         if(defined($dir)) {
             $logDir = $dir; $logBase = "$base$ext";
@@ -790,7 +790,7 @@ sub doit {
     @existingLogFiles = sort { $a cmp $b } @existingLogFiles;
 
     my $results;
-    
+
 
     # Enable all tests if specified
     if(defined $option{all}) {
@@ -824,7 +824,7 @@ sub doit {
             $self->processGroup($grp, 0);
         }
     }
-    
+
     # Show the groups if it was requested
     if($option{listtests}) {
         my $tstname;
@@ -834,8 +834,8 @@ sub doit {
         foreach $tstname (@sorted) {
             my $tst = $tests{$tstname};
             if(! $tst->{Enabled}) { next; }
-            printf "  %-40s (%s)\n", 
-                    $tstname, 
+            printf "  %-40s (%s)\n",
+                    $tstname,
                     defined $tst->{Group} ? join(',', @{$tst->{Group}}) : "";
         }
         exit 0;
@@ -856,7 +856,7 @@ sub doit {
         }
         # Now run the tests
         $self->runTests($logFile);
-    } 
+    }
 
     if ($self->{regrtest}) {
         # sm: finish up the way I like
@@ -868,7 +868,7 @@ sub doit {
             print("Unexpected failure:   $self->{numUnexFailure}\n");
 
             # report the unexpected events
-            if ( -f $self->{smLogfile} ) {  
+            if ( -f $self->{smLogfile} ) {
               print("\n");
               system("cat $self->{smLogfile}");
               system("rm $self->{smLogfile}");
@@ -930,7 +930,7 @@ sub doit {
 
     # Collect all the ErrorCode's
     my %errcodelst = ();
-    
+
     my $tst;
     my $nrenabled = 0;
     foreach $tst (values %tests) {
@@ -952,11 +952,11 @@ sub doit {
     print "Reporting results in $logFile\n";
     # Now show those test cases that succeeded but have bad comments
     # associated with them
-    my @succs = grep { defined ($_->{Comm}) } @{$errcodelst{0}}; 
+    my @succs = grep { defined ($_->{Comm}) } @{$errcodelst{0}};
     $self->showListHeader("Successes thought to fail", 0, $nrenabled, @succs);
     $self->showList(@succs);
     foreach my $errcode (@errorcodes) {
-        $self->showListHeader($self->errorHeading(int($errcode)), 
+        $self->showListHeader($self->errorHeading(int($errcode)),
                               int($errcode),
                               $nrenabled,
                               @{$errcodelst{$errcode}});
@@ -967,7 +967,7 @@ sub doit {
     if(defined $option{param}) {
         $self->printReport();
     }
-} 
+}
 
 
 
@@ -984,7 +984,7 @@ sub sortReport {
         } else {
             $res = $a->{$sp} cmp $b->{$sp};
         }
-        if($res != 0) { 
+        if($res != 0) {
             return $res;
         }
     }
@@ -1024,7 +1024,7 @@ sub printReport {
         }
         # print "Sorting on ", join('+', @sortpars), "\n";
         my @sortedreport = sort sortReport @report;
-        
+
         # Now print the report
         my $par;
         print "\n";
@@ -1125,9 +1125,9 @@ sub run {
     if (defined($tst->{ExtraArgs})) {
       $extraArgs .= " " . $tst->{ExtraArgs};
     }
- 
+
    my $res =
-        $self->runCommand($tst, 
+        $self->runCommand($tst,
                           $tst->{Dir},
                           $tst->{Cmd} . $extraArgs,
                           $stdoutFile, $stderrFile);
@@ -1210,7 +1210,7 @@ sub finishParsingLog {
     if($tst->{ErrorCode} == 0 && # Looks like success so far
        defined $tst->{ExpectPattern} &&
        ! $tst->{FoundExpectedPattern}) {
-        
+
         $tst->{ErrorCode} = 10001;
     }
     if($tst->{ErrorCode} == 0) {
@@ -1320,20 +1320,17 @@ sub promptYN {
     my $counter = 5;
     while(1) {
         my $answer = &prompt($msg);
-        if($answer eq "") { 
+        if($answer eq "") {
             # Perhaps we have no input
-            if(eof(STDIN)) { 
-                return $default; 
+            if(eof(STDIN)) {
+                return $default;
             }
-            next; 
+            next;
         }
         if($answer eq 'y' || $answer eq 'Y') { return 'Y'; }
         if($answer eq 'n' || $answer eq 'N') { return 'N'; }
     }
 }
-    
+
 
 1;
-
-
-
