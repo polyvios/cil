@@ -350,7 +350,7 @@ let scan_oct_escape str =
 let utf8_representation value = 
   let generate_bytes n = 
     let first_byte = 
-      let first_byte_prefix = match n with 1 -> 0L | 2 -> 0xC0L | 3 -> 0xE0L | 4 -> 0xF0L in
+      let first_byte_prefix = match n with 1 -> 0L | 2 -> 0xC0L | 3 -> 0xE0L | 4 -> 0xF0L | _ -> E.s(error "error in utf8_representation"); in
       Int64.logor first_byte_prefix (Int64.shift_right_logical value (6*(n-1)))
     in
     let rec generate_one bytes n = 
@@ -375,11 +375,13 @@ let lex_simple_escape remainder lexbuf =
   let prefix = scan_escape lexchar in
   prefix :: remainder lexbuf
 
-let lex_universal_escape ?is_char:(is_char=false) remainder lexbuf = 
+let lex_universal_escape ischar remainder lexbuf = 
   let value = scan_hex_escape (Lexing.lexeme lexbuf) in
-  let prefix = utf8_representation value in 
-  if is_char then (List.hd prefix) :: remainder lexbuf 
-  else List.rev_append prefix (remainder lexbuf)
+  if ischar then 
+    value :: remainder lexbuf
+  else
+    let prefix = utf8_representation value in 
+    List.rev_append prefix (remainder lexbuf)
 
 let lex_unescaped remainder lexbuf =
   let prefix = Int64.of_int (Char.code (Lexing.lexeme_char lexbuf 0)) in
@@ -473,7 +475,8 @@ let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
 let oct_escape = '\\' octdigit octdigit? octdigit?
-let universal_escape = '\\' ('u' hexdigit hexdigit hexdigit hexdigit | 'U' hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit hexdigit)
+let hexquad = hexdigit hexdigit hexdigit hexdigit
+let universal_escape = '\\' ('u' hexquad | 'U' hexquad hexquad)
 let ident = (letter|'_'|'$'|universal_escape)(letter|decdigit|'_'|'$'|universal_escape)*
 
 (* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
@@ -712,7 +715,7 @@ and str = parse
 |	hex_escape	{addLexeme lexbuf; lex_hex_escape str lexbuf}
 |	oct_escape	{addLexeme lexbuf; lex_oct_escape str lexbuf}
 |	escape		{addLexeme lexbuf; lex_simple_escape str lexbuf}
-| universal_escape {addLexeme lexbuf; lex_universal_escape str lexbuf}
+| universal_escape {addLexeme lexbuf; lex_universal_escape false str lexbuf}
 |	_		{addLexeme lexbuf; lex_unescaped str lexbuf}
 
 and chr =  parse
@@ -720,7 +723,7 @@ and chr =  parse
 |	hex_escape	{lex_hex_escape chr lexbuf}
 |	oct_escape	{lex_oct_escape chr lexbuf}
 |	escape		{lex_simple_escape chr lexbuf}
-| universal_escape {lex_universal_escape ~is_char:true chr lexbuf}
+| universal_escape {lex_universal_escape true chr lexbuf}
 |	_		{lex_unescaped chr lexbuf}
 
 and msasm = parse

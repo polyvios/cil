@@ -130,7 +130,7 @@ let print_commas nl fct lst =
   print_list (fun () -> print ","; if nl then new_line() else space()) fct lst;
   print_maybe ","
 
-let print_string (s:string) (enc: encoding) =
+let print_string (s:string) =
   print ("\"" ^ escape_string s ^ "\"")
 
 let print_wstring (s: int64 list ) (wst: Cabs.wchar_type) =
@@ -205,6 +205,7 @@ and print_type_spec = function
       (print_enum_items enum_items)
   | TtypeofE e -> printl ["__typeof__";"("]; print_expression e; print ") "
   | TtypeofT (s,d) -> printl ["__typeof__";"("]; print_onlytype (s, d); print ") "
+  | Tdefault -> print "default "
 
 
 (* print "struct foo", but with specified keyword and a list of
@@ -412,6 +413,9 @@ and get_operator exp =
   | TYPE_SIZEOF _ -> ("", 16)
   | EXPR_ALIGNOF exp -> ("", 16)
   | TYPE_ALIGNOF _ -> ("", 16)
+  | EXPR_ALIGNOF_C11 exp -> ("", 16)
+  | TYPE_ALIGNOF_C11 _ -> ("", 16)
+  | GENERIC _ -> ("", 16)
   | IMAG exp -> ("", 16)
   | REAL exp -> ("", 16)
   | CLASSIFYTYPE exp -> ("", 16)
@@ -526,8 +530,10 @@ and print_expression_level (lvl: int) (exp : expression) =
       | CONST_FLOAT r -> print r
       | CONST_COMPLEX r -> print r
       | CONST_CHAR c -> print ("'" ^ escape_wstring c ^ "'")
-      | CONST_WCHAR (c, wct) -> print ("L'" ^ escape_wstring c ^ "'") (*TODO*)
-      | CONST_STRING (s, enc) -> print_string s enc
+      | CONST_WCHAR (c, wct) -> 
+        let prefix = match wct with WCHAR_T -> "L'" | CHAR16_T -> "u'" | CHAR32_T -> "U'" | CHAR_UTF8 -> "u8'" | CHAR -> "" in
+        print (prefix ^ escape_wstring c ^ "'")
+      | CONST_STRING (s, enc) -> print_string s
       | CONST_WSTRING (ws, wst) -> print_wstring ws wst)
   | VARIABLE name ->
       comprint "variable";
@@ -546,6 +552,28 @@ and print_expression_level (lvl: int) (exp : expression) =
   | TYPE_ALIGNOF (bt,dt) ->
       printl ["__alignof__";"("];
       print_onlytype (bt, dt);
+      print ")"
+  | EXPR_ALIGNOF_C11 exp ->
+      printl ["_Alignof";"("];
+      print_expression_level 0 exp;
+      print ")"
+  | TYPE_ALIGNOF_C11 (bt,dt) ->
+      printl ["_Alignof";"("];
+      print_onlytype (bt, dt);
+      print ")"
+  | GENERIC (exp, lst) -> 
+      let print_generic_list l =
+        match l with 
+        [] -> ()
+        | (s, e) :: tl ->
+          print ", ";
+          print_onlytype (s, JUSTBASE); 
+          print ": ";
+          print_expression_level 0 e;
+      in
+      printl ["_Generic";"("];
+      print_expression_level 0 exp;
+      print_generic_list lst;
       print ")"
   | IMAG exp ->
       printl ["__imag__";"("];

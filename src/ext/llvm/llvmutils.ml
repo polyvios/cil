@@ -31,7 +31,6 @@
 *)
 open Cil
 open Pretty
-open List
 
 exception Unimplemented of string
 exception Bug
@@ -146,6 +145,8 @@ and gType (t:typ) : doc = match t with
 | TFloat (FComplexFloat, _) -> text "float" (* TODO: Incorrect *)
 | TFloat (FComplexDouble, _) -> text "double"  (* TODO: Incorrect *)
 | TFloat (FComplexLongDouble, _) -> text "fp128"  (* TODO: Incorrect *)
+| TFloat (FFloat128, _) -> text "__float128" (* TODO? *)
+| TFloat (FComplexFloat128, _) -> text "__complex128" (* TODO? *)
 | TPtr (t, _) -> 
     (* LLVM uses "i8 *" for 'void *' *)
     if isVoidType t then text "i8 *"
@@ -159,6 +160,8 @@ and gType (t:typ) : doc = match t with
 | TComp (ci, _) -> (text "%struct.") ++ (text ci.cname)
 | TEnum (ei, _) -> dprintf "i%d" (bitsSizeOf t)
 | TBuiltin_va_list _ -> text "i8 *"
+| TDefault -> text "default" (* TODO? *)
+
 
 (* Convert a CIL type 't' to an LLVM type (as a doc string), for use with dprintf's %a *)
 and dgType () = gType

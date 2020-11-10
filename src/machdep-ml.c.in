@@ -201,16 +201,7 @@ int main(int argc, char **argv)
       long double ld;
     };
     alignof_longdouble = (intptr_t)(&((struct s1*)0)->ld);
-  }    
-
-  // The alignment of __float128
-  {
-    struct s1 {
-      char c;
-      __float128 f1;
-    };
-    alignof_float128 = (intptr_t)(&((struct s1*)0)->f1);
-  }    
+  }     
     
   // The alignment of a float complex
   {
@@ -252,8 +243,17 @@ int main(int argc, char **argv)
   alignof_fun = __alignof(main);
 
   sizeof_fun = 0;
+  alignof_float128 = alignof_longdouble;
 #ifdef __GNUC__
   sizeof_fun = sizeof(main);
+  // The alignment of __float128
+  {
+    struct s1 {
+      char c;
+      __float128 f1;
+    };
+    alignof_float128 = (intptr_t)(&((struct s1*)0)->f1);
+  }   
 #endif
 
   // The alignment of anything with __attribute__((aligned))
@@ -299,7 +299,7 @@ int main(int argc, char **argv)
 	     (int)sizeof(long double _Complex), alignof_longdoublecomplex, (int)sizeof(__complex128), alignof_complex128, 
        (int)sizeof(void), (int)sizeof(bool), alignof_bool,
 	     sizeof_fun, alignof_fun, alignof_str, alignof_aligned, 
-	     underscore(TYPE_SIZE_T), underscore(TYPE_WCHAR_T), underscore(TYPE_CHAR16_T),
+	     underscore(TYPE_SIZE_T), underscore(TYPE_WCHAR_T), underscore(TYPE_CHAR16_T), underscore(TYPE_CHAR32_T),
 	     char_is_unsigned ? "false" : "true", CONST_STRING_LITERALS, 
 	     little_endian ? "false" : "true",
 	     THREAD_IS_KEYWORD, HAVE_BUILTIN_VA_LIST, UNDERSCORE_NAME);

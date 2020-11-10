@@ -992,8 +992,8 @@ class llvmGeneratorClass : llvmGenerator = object (self)
     | SizeOf t -> iExp (sizeOf t)
     | SizeOfE e -> iExp (sizeOf (typeOf e))
     | SizeOfStr s -> ([], LInt (Int64.of_int ((String.length s) + 1), !kindOfSizeOf))
-    | AlignOf t -> ([], LInt (Int64.of_int (alignOf_int t), !kindOfSizeOf))
-    | AlignOfE e -> ([], LInt (Int64.of_int (alignOf_int (typeOf e)), !kindOfSizeOf))
+    | AlignOf t | AlignOf_C11 t-> ([], LInt (Int64.of_int (alignOf_int t), !kindOfSizeOf))
+    | AlignOfE e | AlignOfE_C11 e -> ([], LInt (Int64.of_int (alignOf_int (typeOf e)), !kindOfSizeOf))
     | Lval lv -> iRLval lv
     | UnOp (op, e, t) -> iUnop op e t
     | BinOp (op, e1, e2, t) -> iBinop op e1 e2 t
@@ -1004,6 +1004,7 @@ class llvmGeneratorClass : llvmGenerator = object (self)
     | Real e -> raise (Unimplemented "Real")
     | AddrOfLabel _ -> raise (Unimplemented "AddrOfLabel")
     | Question _ -> raise (Unimplemented "Question")
+    | Generic _ -> raise (Unimplemented "Generic")
 
     and iUnop op (e:exp) (t:typ) : llvmInstruction list * llvmValue =
       let (il,v) = iExp e in

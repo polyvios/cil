@@ -1977,7 +1977,14 @@ let rec typeOf (e: exp) : typ =
         TArray (t,_, a) -> TPtr(t, a)
      | _ -> E.s (E.bug "typeOf: StartOf on a non-array")
   end
-  | Generic (e, lst) -> match lst with (t, e1) :: rest -> typeOf e1 | _ -> voidType
+  | Generic (exp, lst) -> 
+      let typeOfExp = typeOf exp in
+      let rec findType lst = 
+        match lst with 
+        [] -> voidType
+        | (t, e) :: rest -> if t = typeOfExp then typeOf e else findType rest
+      in 
+      findType lst
 
 and typeOfInit (i: init) : typ =
   match i with
@@ -2269,6 +2276,33 @@ let rec alignOf_int t =
     | TVoid _ as t -> raise (SizeOfError ("void", t))
     | TDefault -> raise (SizeOfError ("default", t))
   in
+  let is_power_of_two n = 
+    let log2 = (log10 (float_of_int n)) /. (log10 2.) in 
+    ceil log2 = floor log2
+  in
+  let rec strictest_alignment (current:int) (lst:attribute list) = 
+    match lst with
+      [] -> current
+    | (Attr(_, [a]) as at)::rest -> begin
+        match intOfAttrparam a with 
+          Some 0 -> strictest_alignment current rest
+        | Some n -> 
+          if not (is_power_of_two n) then begin
+            ignore(warn "Invalid alignment value specified by attribute %a\n" (!pd_attr) at);
+            strictest_alignment current rest 
+          end
+          else strictest_alignment (max current n) rest
+        | None -> 
+          ignore (warn "alignment attribute \"%a\" not understood on %a" (!pd_attr) at (!pd_type) t);
+          strictest_alignment current rest
+        end
+    | Attr(_, []) :: rest -> 
+      strictest_alignment (max current !M.theMachine.M.alignof_aligned) rest;
+    | at :: rest ->
+      ignore (warn "alignment attribute \"%a\" not understood on %a"
+                (!pd_attr) at (!pd_type) t);
+      strictest_alignment current rest
+  in
   match filterAttributes "aligned" (typeAttrs t) @ filterAttributes "alignas" (typeAttrs t) with
     [] ->
       (* no __aligned__ attribute, so get the default alignment *)
@@ -2278,33 +2312,6 @@ let rec alignOf_int t =
                 (!pd_type) t);
       alignOfType ()
   | (Attr(_, [a]) as at)::rest -> 
-    let is_power_of_two n = 
-      let log2 = (log10 (float_of_int n)) /. (log10 2.) in 
-      ceil log2 = floor log2
-    in
-    let rec strictest_alignment (current:int) (lst:attribute list) = 
-      match lst with
-        [] -> current
-      | (Attr(_, [a]) as at)::rest -> begin
-          match intOfAttrparam a with 
-            Some 0 -> strictest_alignment current rest
-          | Some n -> 
-            if not (is_power_of_two n) then begin
-              ignore(warn "Invalid alignment value specified by attribute %a\n" (!pd_attr) at);
-              strictest_alignment current rest 
-            end
-            else strictest_alignment (max current n) rest
-          | None -> 
-            ignore (warn "alignment attribute \"%a\" not understood on %a" (!pd_attr) at (!pd_type) t);
-            strictest_alignment current rest
-          end
-      | Attr(_, []) :: rest -> 
-        !M.theMachine.M.alignof_aligned
-      | at ::_ ->
-        ignore (warn "alignment attribute \"%a\" not understood on %a"
-                  (!pd_attr) at (!pd_type) t);
-        strictest_alignment current rest
-    in
     let current = match intOfAttrparam a with
         Some 0 -> alignOfType ()
       | Some n -> 
@@ -2320,10 +2327,7 @@ let rec alignOf_int t =
    | Attr(_, [])::rest ->
        (* aligned with no arg means a power of two at least as large as
           any alignment on the system.*)
-       if rest <> [] then
-         ignore(warn "ignoring duplicate align attributes on %a"
-                  (!pd_type) t);
-       !M.theMachine.M.alignof_aligned
+       strictest_alignment !M.theMachine.M.alignof_aligned rest
   | at::_ ->
       ignore (warn "alignment attribute \"%a\" not understood on %a"
                 (!pd_attr) at (!pd_type) t);
@@ -2342,6 +2346,16 @@ and intOfAttrparam (a:attrparam) : int option =
       AInt(n) -> n
     | ABinOp(Shiftlt, a1, a2) -> (doit a1) lsl (doit a2)
     | ABinOp(Div, a1, a2) -> (doit a1) / (doit a2)
+    | ABinOp(PlusA, a1, a2) -> (doit a1) + (doit a2)
+    | ABinOp(MinusA, a1, a2) -> (doit a1) - (doit a2)
+    | ABinOp(Mult, a1, a2) -> (doit a1) * (doit a2)
+    | ABinOp(Shiftrt, a1, a2) -> (doit a1) lsr (doit a2)
+    | ABinOp(BAnd, a1, a2) -> (doit a1) land (doit a2)
+    | ABinOp(BOr, a1, a2) -> (doit a1) lor (doit a2)
+    | ABinOp(BXor, a1, a2) -> (doit a1) lxor (doit a2)
+    | ABinOp(LAnd, a1, a2) -> (doit a1) land (doit a2)
+    | ABinOp(LOr, a1, a2) -> (doit a1) lor (doit a2)
+    | AUnOp(Neg, a1) -> -(doit a1)
     | ASizeOf(t) ->
         let bs = bitsSizeOf t in
         bs / 8
@@ -2722,12 +2736,9 @@ and constFold (machdep: bool) (e: exp) : exp =
       | _ -> constFold machdep (AlignOf (typeOf e))
   end
   | AlignOfE_C11 e when machdep -> begin
-    (* The alignment of an expression is not always the alignment of its
-     * type. I know that for strings this is not true *)
     match e with
       Const (CStr _) when not !msvcMode ->
         kinteger !kindOfSizeOf !M.theMachine.M.alignof_str
-          (* For an array, it is the alignment of the array ! *)
     | _ -> constFold machdep (AlignOf_C11 (typeOf e))
 end
 

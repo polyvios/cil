@@ -270,8 +270,7 @@ let queue_to_string queue =
 %token EOF
 %token<Cabs.cabsloc> CHAR INT BOOL DOUBLE FLOAT VOID INT64 INT32
 %token<Cabs.cabsloc> INT128 FLOAT128 COMPLEX COMPLEX128 /* C99 */
-%token<Cabs.cabsloc> NORETURN THREADLOCAL ALIGNOFC11 GENERIC /* ALIGNOF is the GCC attribute */ ALIGNAS /* C11 */
-/* %token GENERIC */
+%token<Cabs.cabsloc> NORETURN THREADLOCAL GENERIC ALIGNOFC11 /* ALIGNOF is the GCC attribute */ ALIGNAS /* C11 */
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
 %token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER HIDDEN
@@ -768,8 +767,12 @@ string_constant:
       let queue, typ, loc = $1 in
       let str, typ2, _ = $2 in
       Queue.add str queue;
-      let typ3 = if typ = CHAR_UTF8 || typ2 = CHAR_UTF8 then CHAR_UTF8 else CHAR in
-      queue, typ3, loc
+      if typ2 = CHAR_UTF8 && typ <> CHAR && typ <> CHAR_UTF8 then (
+        parse_error "Incompatible string literals";
+        raise Parsing.Parse_error)
+      else
+        let typ3 = if typ2 = CHAR_UTF8 then CHAR_UTF8 else typ in
+        queue, typ3, loc
     }
 |   string_constant CST_WSTRING {
       let queue, typ, loc = $1 in

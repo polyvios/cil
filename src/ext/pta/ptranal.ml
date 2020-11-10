@@ -257,6 +257,9 @@ and analyze_expr (e : exp ) : A.tau =
       | SizeOfE _ -> A.bottom ()
       | Imag __ -> failwith "not implemented yet"
       | Real __ -> failwith "not implemented yet"
+      | AlignOf_C11 _ -> A.bottom ()
+      | AlignOfE_C11 _ -> A.bottom ()
+      | Generic (_, _) -> failwith "not implemented yet"
  in
   H.add expressions e result;
   result

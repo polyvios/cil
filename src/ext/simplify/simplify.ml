@@ -121,7 +121,7 @@ let rec makeThreeAddress
                               * return that temp *)
     (e: exp) : taExp =
   match e with
-    SizeOf _ | SizeOfE _ | AlignOf _ |  AlignOfE _ | SizeOfStr _ ->
+    SizeOf _ | SizeOfE _ | AlignOf _ |  AlignOfE _ | SizeOfStr _ | AlignOf_C11 _ | AlignOfE_C11 _ ->
       constFold true e
   | Const _ -> e
   | AddrOf (Var _, NoOffset) -> e
@@ -156,6 +156,7 @@ let rec makeThreeAddress
   | StartOf lv ->
       makeThreeAddress setTemp (AddrOf (addOffsetLval (Index(zero, NoOffset))
                                           lv))
+  | Generic (_, _) -> e (* TODO *)
 
 (* Make a basic expression *)
 and makeBasic (setTemp: taExp -> bExp) (e: exp) : bExp =
