@@ -587,8 +587,6 @@ let alphaConvertVarAndAddToEnv (addtoenv: bool) (vi: varinfo) : varinfo =
   (* Store all locals in the slocals (in reversed order). We'll reverse them
    * and take out the formals at the end of the function *)
   if not vi.vglob then
-    if vi.vthreadlocal && vi.vstorage = NoStorage then 
-      E.s (error "Declaration specifiers of %s in block scope include _Thread_local but do not include static or extern" vi.vname);
     !currentFunctionFDEC.slocals <- newvi :: !currentFunctionFDEC.slocals;
 
   (if addtoenv then
@@ -596,6 +594,9 @@ let alphaConvertVarAndAddToEnv (addtoenv: bool) (vi: varinfo) : varinfo =
       addGlobalToEnv vi.vname (EnvVar newvi)
     else
       addLocalToEnv vi.vname (EnvVar newvi));
+
+  (if not vi.vglob && vi.vthreadlocal && vi.vstorage = NoStorage then 
+      E.s (error "Declaration specifiers of %s in block scope include _Thread_local but do not include static or extern" vi.vname); );
 (*
   ignore (E.log "  new=%s\n" newvi.vname);
 *)
