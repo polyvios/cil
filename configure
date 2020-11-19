@@ -2731,6 +2731,10 @@ else
 int
 main ()
 {
+#if defined(__clang__)
+      choke me
+#endif
+
 #ifndef __GNUC__
        choke me
 #endif
