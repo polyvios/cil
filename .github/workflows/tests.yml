@@ -36,7 +36,7 @@ jobs:
             ~/.opam
             _opam
           # An explicit key for restoring and saving the cache
-          key: ${{ runner.os }}-new-{{ matrix.ocaml-version }}
+          key: ${{ runner.os }}-new-${{ matrix.ocaml-version }}
 
       - name: Setup OCaml ${{ matrix.ocaml-version }}
         uses: avsm/setup-ocaml@v1
