@@ -19,8 +19,7 @@ jobs:
           - 4.07.1
           # - 4.09.1
           # - 4.08.1
-        compiler:
-          - gcc
+
 
     runs-on: ${{ matrix.os }}
 
