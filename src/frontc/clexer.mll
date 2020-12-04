@@ -121,7 +121,6 @@ let init_lexicon _ =
       ("__const__", fun loc -> CONST loc);
       ("_Complex", fun loc -> COMPLEX loc);
       ("__complex__", fun loc -> COMPLEX loc);
-      ("hidden", fun loc -> HIDDEN loc);
       ("static", fun loc -> STATIC loc);
       ("extern", fun loc -> EXTERN loc);
       ("long", fun loc -> LONG loc);
@@ -481,7 +480,7 @@ let ident = (letter|'_'|'$'|universal_escape)(letter|decdigit|'_'|'$'|universal_
 
 (* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
 let no_parse_pragma =
-               "warning" | "GCC"
+               "warning" | "GCC" | "STDC"
              (* Solaris-style pragmas:  *)
              | "ident" | "section" | "option" | "asm" | "use_section" | "weak"
              | "redefine_extname"

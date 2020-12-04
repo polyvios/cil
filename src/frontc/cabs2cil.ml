@@ -143,6 +143,8 @@ let withCprint (f: 'a -> unit) (x: 'a) : unit =
  * hold the result of function calls *)
 let callTempVars: unit IH.t = IH.create 13
 
+let allTempVars: unit IH.t = IH.create 13
+
 (* Keep a list of functions that were called without a prototype. *)
 let noProtoFunctions : bool IH.t = IH.create 13
 
@@ -336,8 +338,15 @@ type envdata =
                                          * for this category is "label foo" *)
 
 let env : (string, envdata * location) H.t = H.create 307
+
+(* Just like env, except that it simply collects all the information (i.e. entries
+ * are never removed and it is also not emptied after every file). *)
+let environment : (string, envdata * location) H.t = H.create 307
+
 (* We also keep a global environment. This is always a subset of the env *)
 let genv : (string, envdata * location) H.t = H.create 307
+
+let varnameMapping : (string, string) H.t = H.create 307
 
  (* In the scope we keep the original name, so we can remove them from the
   * hash table easily *)
@@ -357,6 +366,7 @@ let isAtTopLevel () =
 let addLocalToEnv (n: string) (d: envdata) =
 (*  ignore (E.log "%a: adding local %s to env\n" d_loc !currentLoc n); *)
   H.add env n (d, !currentLoc);
+  H.add environment n (d, !currentLoc);
     (* If we are in a scope, then it means we are not at top level. Add the
      * name to the scope *)
   (match !scopes with
@@ -373,6 +383,7 @@ let addLocalToEnv (n: string) (d: envdata) =
 let addGlobalToEnv (k: string) (d: envdata) : unit =
 (*  ignore (E.log "%a: adding global %s to env\n" d_loc !currentLoc k); *)
   H.add env k (d, !currentLoc);
+  H.add environment k (d, !currentLoc);
   (* Also add it to the global environment *)
   H.add genv k (d, !currentLoc)
 
@@ -428,6 +439,7 @@ let newAlphaName (globalscope: bool) (* The name should have global scope *)
     findEnclosingFun !scopes;
   let newname, oldloc =
            AL.newAlphaName ~alphaTable:alphaTable ~undolist:None ~lookupname:lookupname ~data:!currentLoc in
+  H.add varnameMapping origname newname;
   stripKind kind newname, oldloc
 
 
@@ -1998,6 +2010,11 @@ let rec setOneInit (this: preInit)
       !pArray.(idx) <- this';
       CompoundPre (pMaxIdx, pArray)
 
+let rec patchArraySizeZero t =
+  match t with
+  | TArray(typ, None, attr) -> TArray(typ, Some(Cil.zero),attr)
+  | TNamed({tname=n; ttype=typ; treferenced=ref}, attr) -> TNamed({tname=n; ttype=patchArraySizeZero typ; treferenced=ref}, attr)
+  | _ -> t
 
 (* collect a CIL initializer, given the original syntactic initializer
  * 'preInit'; this returns a type too, since initialization of an array
@@ -2008,7 +2025,7 @@ let rec collectInitializer
     (isconst: bool)
     (this: preInit)
     (thistype: typ) : (init * typ) =
-  if this = NoInitPre then (makeZeroInit thistype), thistype
+  if this = NoInitPre then (makeZeroInit (patchArraySizeZero thistype)), patchArraySizeZero thistype
   else
     match unrollType thistype, this with
     | _ , SinglePre e -> SingleInit e, thistype
@@ -4676,6 +4693,7 @@ and doExp (asconst: bool)   (* This expression is used as a constant *)
               (* Remember that this variable has been created for this
                * specific call. We will use this in collapseCallCast. *)
               IH.add callTempVars tmp.vid ();
+              IH.add allTempVars tmp.vid ();
               addCall (Some (var tmp)) (Lval(var tmp)) restype''
           end
         end;

@@ -238,10 +238,10 @@ let transformOffsetOf (speclist, dtype) member =
   let resultExpr = CAST (sizeofType, SINGLE_INIT addrExpr) in
   resultExpr
 
-let queue_to_int64_list queue = 
+let queue_to_int64_list queue =
   List.rev (Queue.fold (fun l e -> List.rev_append e l) [] queue)
 
-let queue_to_string queue = 
+let queue_to_string queue =
   let buffer = Buffer.create (Queue.length queue) in
   Queue.iter
     (List.iter
@@ -273,7 +273,7 @@ let queue_to_string queue =
 %token<Cabs.cabsloc> NORETURN THREADLOCAL GENERIC ALIGNOFC11 /* ALIGNOF is the GCC attribute */ ALIGNAS /* C11 */
 %token<Cabs.cabsloc> ENUM STRUCT TYPEDEF UNION
 %token<Cabs.cabsloc> SIGNED UNSIGNED LONG SHORT
-%token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER HIDDEN
+%token<Cabs.cabsloc> VOLATILE EXTERN STATIC CONST RESTRICT AUTO REGISTER
 %token<Cabs.cabsloc> THREAD
 
 %token<Cabs.cabsloc> SIZEOF ALIGNOF
@@ -427,7 +427,7 @@ global:
 /*(* Some C header files ar shared with the C++ compiler and have linkage
    * specification *)*/
 | EXTERN string_constant declaration    { let q,t,l = $2 in LINKAGE (queue_to_string q, (*handleLoc*) l, [ $3 ]) }
-| EXTERN string_constant LBRACE globals RBRACE 
+| EXTERN string_constant LBRACE globals RBRACE
                                         { let q,t,l = $2 in LINKAGE (queue_to_string q, (*handleLoc*) l, $4)  }
 | ASM LPAREN string_constant RPAREN SEMICOLON
                                         { let q,t,l = $3 in GLOBASM (queue_to_string q, (*handleLoc*) $1) }
@@ -493,7 +493,7 @@ primary_expression:                     /*(* 6.5.1. *)*/
 ;
 
 /* (specifier, expression) list */
-generic_assoc_list: 
+generic_assoc_list:
 | generic_association {[$1]}
 | generic_assoc_list COMMA generic_association {$3 :: $1}
 
@@ -730,7 +730,7 @@ constant:
 |   CST_CHAR32      {CONST_WCHAR (fst $1, CHAR32_T), snd $1}
 |   string_constant     {
         let queue, typ, location = $1 in
-        match typ with 
+        match typ with
         | CHAR -> CONST_STRING (queue_to_string queue, NO_ENCODING), location
         | CHAR_UTF8 -> CONST_STRING (queue_to_string queue, UTF8), location
         | _ -> CONST_WSTRING (queue_to_int64_list queue, typ), location
@@ -1402,7 +1402,6 @@ attribute_nocv:
                                         /* ISO 6.7.3 */
 |   THREAD                              { ("__thread",[]), $1 }
 |   QUALIFIER                     {("__attribute__",[VARIABLE(fst $1)]),snd $1}
-|   HIDDEN                              { ("hidden",[]), $1 }
 ;
 
 attribute_nocv_list:

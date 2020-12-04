@@ -698,6 +698,8 @@ addTest("testrun/blockattr2 USECFG=1");
 addTest("testrun/extinline2");
 addTest("test/extinline3");
 addTest("testrun/bool");
+addTest("testrun/var_named_hidden");
+addTest("testrun/macro_hidden");
 addTest("testrun/booleanOp USE_LOGICAL_OPERATORS=1");
 addTest("test/va_arg_pack");
 addTest("testrun/compound1");
@@ -714,6 +716,7 @@ addTest("testrunc99/c99-complex");
 addTest("testrunc99/c99-universal-character-names");
 addBadComment("testrunc99/c99-universal-character-names", "Universal character names are not yet supported");
 addTest("testrunc99/c99-tgmath");
+addTest("testrunc99/c99-float-pragma");
 addTest("combinec99inline");
 addBadComment("combinec99inline", "C99 inline semantic not fully supported.");
 
