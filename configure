@@ -5520,6 +5520,8 @@ $as_echo_n "checking for real definition of size_t... " >&6; }
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5543,6 +5545,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5568,6 +5572,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5591,6 +5597,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5616,6 +5624,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5639,6 +5649,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5664,6 +5676,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5687,6 +5701,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5712,6 +5728,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5735,6 +5753,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5775,6 +5795,8 @@ $as_echo_n "checking for real definition of wchar_t... " >&6; }
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5798,6 +5820,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5823,6 +5847,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5846,6 +5872,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5871,6 +5899,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5894,6 +5924,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5919,6 +5951,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5942,6 +5976,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5967,6 +6003,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -5990,6 +6028,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6030,6 +6070,8 @@ $as_echo_n "checking for real definition of char16_t... " >&6; }
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6053,6 +6095,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6078,6 +6122,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6101,6 +6147,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6126,6 +6174,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6149,6 +6199,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6174,6 +6226,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6197,6 +6251,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6222,6 +6278,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6245,6 +6303,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6285,6 +6345,8 @@ $as_echo_n "checking for real definition of char32_t... " >&6; }
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6308,6 +6370,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6333,6 +6397,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6356,6 +6422,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6381,6 +6449,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6404,6 +6474,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6429,6 +6501,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6452,6 +6526,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6477,6 +6553,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
@@ -6500,6 +6578,8 @@ rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif

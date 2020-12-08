@@ -6,6 +6,8 @@ AC_DEFUN([__CIL_CHECK_INTEGER_TYPE_TYPE], [
 #include <stddef.h>
 #include <wchar.h>
 #if __APPLE__
+  typedef uint_least16_t char_16_t;
+  typedef uint_least32_t char_32_t;
 #else
   #include <uchar.h>
 #endif
