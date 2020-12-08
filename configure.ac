@@ -6,7 +6,7 @@
 # script; any text which isn't an M4/autoconf directive gets
 # copied verbatim to that script.
 
-# also, in general, watch out: the M4 quoting charactes are
+# also, in general, watch out: the M4 quoting characters are
 # the square brackets: [ and ].  if you want to pass brackets
 # to something, you can quote the brackets with more brackets.
 # I don't know how to pass a single (unbalanced) bracket ..
