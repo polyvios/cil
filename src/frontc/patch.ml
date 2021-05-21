@@ -1,11 +1,11 @@
 (*
  *
- * Copyright (c) 2001-2002, 
+ * Copyright (c) 2001-2002,
  *  George C. Necula    <necula@cs.berkeley.edu>
  *  Scott McPeak        <smcpeak@cs.berkeley.edu>
  *  Wes Weimer          <weimer@cs.berkeley.edu>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
@@ -137,9 +137,9 @@ begin
 end
 
 
-(* class to describe how to modify the tree for subtitution *)
+(* class to describe how to modify the tree for substitution *)
 class substitutor (bindings : binding list) = object(self)
-  inherit nopCabsVisitor as super
+  inherit nopCabsVisitor
 
   (* look in the binding list for a given name *)
   method findBinding (name : string) : binding =
@@ -156,7 +156,7 @@ class substitutor (bindings : binding list) = object(self)
       Not_found -> raise (BadBind ("name not found: " ^ name))
   end
 
-  method vexpr (e:expression) : expression visitAction =
+  method! vexpr (e:expression) : expression visitAction =
   begin
     match e with
     | EXPR_PATTERN(name) -> (
@@ -166,9 +166,9 @@ class substitutor (bindings : binding list) = object(self)
       )
     | _ -> DoChildren
   end
-  
+
   (* use of a name *)
-  method vvar (s:string) : string =
+  method! vvar (s:string) : string =
   begin
     if (isPatternVar s) then (
       let nameString = (extractPatternVar s) in
@@ -181,7 +181,7 @@ class substitutor (bindings : binding list) = object(self)
   end
 
   (* binding introduction of a name *)
-  method vname (k: nameKind) (spec: specifier) (n: name) : name visitAction =
+  method! vname (k: nameKind) (spec: specifier) (n: name) : name visitAction =
   begin
     match n with (s (*variable name*), dtype, attrs, loc) -> (
       let replacement = (self#vvar s) in    (* use replacer from above *)
@@ -192,7 +192,7 @@ class substitutor (bindings : binding list) = object(self)
     )
   end
 
-  method vspec (specList: specifier) : specifier visitAction =
+  method! vspec (specList: specifier) : specifier visitAction =
   begin
     if verbose then (trace "patchDebug" (dprintf "substitutor: vspec\n"));
     (printSpec specList);
@@ -218,7 +218,7 @@ class substitutor (bindings : binding list) = object(self)
                   match (self#findBinding name) with
                   | BSpecifier(_, replacement) -> (
                       (trace "patchDebug" (dprintf "replacing pattern %s\n" name));
-                      replacement                                                  
+                      replacement
                     )
                   | _ -> raise (BadBind ("wrong type: " ^ name))
                 )
@@ -233,7 +233,7 @@ class substitutor (bindings : binding list) = object(self)
       DoChildren
   end
 
-  method vtypespec (tspec: typeSpecifier) : typeSpecifier visitAction =
+  method! vtypespec (tspec: typeSpecifier) : typeSpecifier visitAction =
   begin
     match tspec with
     | Tnamed(str) when (isPatternVar str) ->
@@ -258,7 +258,7 @@ let unifyExprFwd : (expression -> expression -> binding list) ref
 
 (* substitution for expressions *)
 let substExpr (bindings : binding list) (expr : expression) : expression =
-begin            
+begin
   if verbose then
     (trace "patchDebug" (dprintf "substExpr with %d bindings\n" (List.length bindings)));
   (printExpr expr);
@@ -278,9 +278,9 @@ let d_loc (_:unit) (loc: cabsloc) : doc =
 (* to apply expression transformers *)
 class exprTransformer (srcpattern : expression) (destpattern : expression)
                       (patchline : int) (srcloc : cabsloc) = object(self)
-  inherit nopCabsVisitor as super
+  inherit nopCabsVisitor
 
-  method vexpr (e:expression) : expression visitAction =
+  method! vexpr (e:expression) : expression visitAction =
   begin
     (* see if the source pattern matches this subexpression *)
     try (
@@ -389,7 +389,7 @@ begin
 
         (* recursively invoke myself to try additional patches *)
         (* since visitCabsDefinition might return a list, I'll try my *)
-        (* addtional patches on every yielded definition, then collapse *)
+        (* additional patches on every yielded definition, then collapse *)
         (* all of them into a single list *)
         (List.flatten (Util.list_map (fun d -> (patchDefn rest d)) dList))
       )
@@ -469,7 +469,7 @@ begin
   | SpecType(tspec1), SpecType(tspec2) ->
       (unifyTypeSpecifier tspec1 tspec2)
   | SpecPattern(name), _ ->
-      (* record that future occurrances of @specifier(name) will yield this specifier *)
+      (* record that future occurrences of @specifier(name) will yield this specifier *)
       if verbose then
         (trace "patchDebug" (dprintf "found specifier match for %s\n" name));
       [BSpecifier(name, [tgt])]

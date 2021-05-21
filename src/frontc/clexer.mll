@@ -6,7 +6,7 @@
  *  Wes Weimer          <weimer@cs.berkeley.edu>
  *  Ben Liblit          <liblit@cs.berkeley.edu>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
@@ -37,7 +37,7 @@
  *)
 (* FrontC -- lexical analyzer
 **
-** 1.0	3.22.99	Hugues Cassé	First version.
+** 1.0	3.22.99	Hugues Cassï¿½	First version.
 ** 2.0  George Necula 12/12/00: Many extensions
 *)
 {
@@ -59,9 +59,9 @@ let addComment c =
   GrowArray.setg Cabshelper.commentsGA (i+1) (l,c,false)
 
 (* track whitespace for the current token *)
-let white = ref ""  
+let white = ref ""
 let addWhite lexbuf = if not !Whitetrack.enabled then
-    let w = Lexing.lexeme lexbuf in 
+    let w = Lexing.lexeme lexbuf in
     white := !white ^ w
 let clear_white () = white := ""
 let get_white () = !white
@@ -71,7 +71,7 @@ let addLexeme lexbuf =
     let l = Lexing.lexeme lexbuf in
     lexeme := !lexeme ^ l
 let clear_lexeme () = lexeme := ""
-let get_extra_lexeme () = !lexeme 
+let get_extra_lexeme () = !lexeme
 
 let int64_to_char value =
   if (compare value (Int64.of_int 255) > 0) || (compare value Int64.zero < 0) then
@@ -91,10 +91,10 @@ let rec intlist_to_string (str: int64 list):string =
       (String.make 1 this_char) ^ (intlist_to_string rest)
 
 (* Some debugging support for line numbers *)
-let dbgToken (t: token) = 
+let dbgToken (t: token) =
   if false then begin
     ignore (E.log "%a" insert
-              (match t with 
+              (match t with
                 IDENT (n, l) -> dprintf "IDENT(%s,%d)\n" n l.Cabs.lineno
               | LBRACE l -> dprintf "LBRACE(%d)\n" l.Cabs.lineno
               | RBRACE l -> dprintf "RBRACE(%d)\n" l.Cabs.lineno
@@ -113,12 +113,14 @@ let dbgToken (t: token) =
 let lexicon = H.create 211
 let init_lexicon _ =
   H.clear lexicon;
-  List.iter 
+  List.iter
     (fun (key, builder) -> H.add lexicon key builder)
     [ ("auto", fun loc -> AUTO loc);
       ("const", fun loc -> CONST loc);
       ("__const", fun loc -> CONST loc);
       ("__const__", fun loc -> CONST loc);
+      ("_Complex", fun loc -> COMPLEX loc);
+      ("__complex__", fun loc -> COMPLEX loc);
       ("static", fun loc -> STATIC loc);
       ("extern", fun loc -> EXTERN loc);
       ("long", fun loc -> LONG loc);
@@ -135,6 +137,8 @@ let init_lexicon _ =
       ("char", fun loc -> CHAR loc);
       ("int", fun loc -> INT loc);
       ("float", fun loc -> FLOAT loc);
+      ("__float128", fun loc -> FLOAT128 loc);
+      ("_Float128", fun loc -> FLOAT128 loc);
       ("double", fun loc -> DOUBLE loc);
       ("void", fun loc -> VOID loc);
       ("enum", fun loc -> ENUM loc);
@@ -143,25 +147,25 @@ let init_lexicon _ =
       ("union", fun loc -> UNION loc);
       ("break", fun loc -> BREAK loc);
       ("continue", fun loc -> CONTINUE loc);
-      ("goto", fun loc -> GOTO loc); 
+      ("goto", fun loc -> GOTO loc);
       ("return", fun loc -> dbgToken (RETURN loc));
       ("switch", fun loc -> dbgToken (SWITCH loc));
-      ("case", fun loc -> CASE loc); 
+      ("case", fun loc -> CASE loc);
       ("default", fun loc -> DEFAULT loc);
-      ("while", fun loc -> WHILE loc);  
-      ("do", fun loc -> DO loc);  
+      ("while", fun loc -> WHILE loc);
+      ("do", fun loc -> DO loc);
       ("for", fun loc -> FOR loc);
       ("if", fun loc -> dbgToken (IF loc));
       ("else", fun _ -> ELSE);
       (*** Implementation specific keywords ***)
       ("__signed__", fun loc -> SIGNED loc);
       ("__inline__", fun loc -> INLINE loc);
-      ("inline", fun loc -> INLINE loc); 
+      ("inline", fun loc -> INLINE loc);
       ("__inline", fun loc -> INLINE loc);
       ("_inline", fun loc ->
-                      if !Cprint.msvcMode then 
+                      if !Cprint.msvcMode then
                         INLINE loc
-                      else 
+                      else
                         IDENT ("_inline", loc));
       ("__attribute__", fun loc -> ATTRIBUTE loc);
       ("__attribute", fun loc -> ATTRIBUTE loc);
@@ -174,12 +178,14 @@ let init_lexicon _ =
       ("asm", fun loc -> ASM loc);
       ("__typeof__", fun loc -> TYPEOF loc);
       ("__typeof", fun loc -> TYPEOF loc);
-      ("typeof", fun loc -> TYPEOF loc); 
+      ("typeof", fun loc -> TYPEOF loc);
       ("__alignof", fun loc -> ALIGNOF loc);
       ("__alignof__", fun loc -> ALIGNOF loc);
       ("__volatile__", fun loc -> VOLATILE loc);
       ("__volatile", fun loc -> VOLATILE loc);
-
+      ("__real__", fun loc -> REAL loc);
+      ("__imag__", fun loc -> IMAG loc);
+      ("__builtin_classify_type", fun loc -> CLASSIFYTYPE loc);
       ("__FUNCTION__", fun loc -> FUNCTION__ loc);
       ("__func__", fun loc -> FUNCTION__ loc); (* ISO 6.4.2.2 *)
       ("__PRETTY_FUNCTION__", fun loc -> PRETTY_FUNCTION__ loc);
@@ -190,37 +196,38 @@ let init_lexicon _ =
       ("restrict", fun loc -> RESTRICT loc);
 (*      ("__extension__", EXTENSION); *)
       (**** MS VC ***)
-      ("__int64", fun _ -> INT64 (currentLoc ()));
       ("__int32", fun loc -> INT loc);
-      ("_cdecl",  fun _ -> MSATTR ("_cdecl", currentLoc ())); 
+      ("__int64", fun _ -> INT64 (currentLoc ()));
+      ("__int128", fun _ -> INT128 (currentLoc ()));
+      ("_cdecl",  fun _ -> MSATTR ("_cdecl", currentLoc ()));
       ("__cdecl", fun _ -> MSATTR ("__cdecl", currentLoc ()));
-      ("_stdcall", fun _ -> MSATTR ("_stdcall", currentLoc ())); 
+      ("_stdcall", fun _ -> MSATTR ("_stdcall", currentLoc ()));
       ("__stdcall", fun _ -> MSATTR ("__stdcall", currentLoc ()));
-      ("_fastcall", fun _ -> MSATTR ("_fastcall", currentLoc ())); 
+      ("_fastcall", fun _ -> MSATTR ("_fastcall", currentLoc ()));
       ("__fastcall", fun _ -> MSATTR ("__fastcall", currentLoc ()));
       ("__w64", fun _ -> MSATTR("__w64", currentLoc ()));
       ("__declspec", fun loc -> DECLSPEC loc);
-      ("__forceinline", fun loc -> INLINE loc); (* !! we turn forceinline 
+      ("__forceinline", fun loc -> INLINE loc); (* !! we turn forceinline
                                                  * into inline *)
       ("__try", fun loc -> TRY loc);
       ("__except", fun loc -> EXCEPT loc);
       ("__finally", fun loc -> FINALLY loc);
       (* weimer: some files produced by 'GCC -E' expect this type to be
        * defined *)
-      ("__builtin_va_list", 
+      ("__builtin_va_list",
        fun _ -> NAMED_TYPE ("__builtin_va_list", currentLoc ()));
       ("__builtin_va_arg", fun loc -> BUILTIN_VA_ARG loc);
       ("__builtin_types_compatible_p", fun loc -> BUILTIN_TYPES_COMPAT loc);
       ("__builtin_offsetof", fun loc -> BUILTIN_OFFSETOF loc);
       (* On some versions of GCC __thread is a regular identifier *)
-      ("__thread", fun loc -> 
-                      if !Machdep.theMachine.Machdep.__thread_is_keyword then 
+      ("__thread", fun loc ->
+                      if !Machdep.theMachine.Machdep.__thread_is_keyword then
                          THREAD loc
-                       else 
+                       else
                          IDENT ("__thread", loc));
     ]
 
-(* Mark an identifier as a type name. The old mapping is preserved and will 
+(* Mark an identifier as a type name. The old mapping is preserved and will
  * be reinstated when we exit this context *)
 let add_type name =
    (* ignore (print_string ("adding type name " ^ name ^ "\n"));  *)
@@ -230,16 +237,16 @@ let context : string list list ref = ref [[]]
 
 let push_context _ = context := []::!context
 
-let pop_context _ = 
+let pop_context _ =
   match !context with
     [] -> raise (InternalError "Empty context stack")
   | con::sub ->
 		(context := sub;
-		List.iter (fun name -> 
+		List.iter (fun name ->
                            (* ignore (print_string ("removing lexicon for " ^ name ^ "\n")); *)
                             H.remove lexicon name) con)
 
-(* Mark an identifier as a variable name. The old mapping is preserved and 
+(* Mark an identifier as a variable name. The old mapping is preserved and
  * will be reinstated when we exit this context  *)
 let add_identifier name =
   match !context with
@@ -247,7 +254,7 @@ let add_identifier name =
   | con::sub ->
       (context := (name::con)::sub;
        (*                print_string ("adding IDENT for " ^ name ^ "\n"); *)
-       H.add lexicon name (fun loc -> 
+       H.add lexicon name (fun loc ->
          dbgToken (IDENT (name, loc))))
 
 
@@ -266,7 +273,7 @@ let scan_ident id =
 (*
 ** Buffer processor
 *)
- 
+
 
 let init ~(filename: string) : Lexing.lexbuf =
   init_lexicon ();
@@ -278,7 +285,7 @@ let init ~(filename: string) : Lexing.lexbuf =
   E.startParsing filename
 
 
-let finish () = 
+let finish () =
   E.finishParsing ()
 
 (*** Error handling ***)
@@ -297,14 +304,14 @@ let scan_escape (char: char) : int64 =
   | 'v' -> '\011'  (* ASCII code 11 *)
   | 'a' -> '\007'  (* ASCII code 7 *)
   | 'e' | 'E' -> '\027'  (* ASCII code 27. This is a GCC extension *)
-  | '\'' -> '\''    
+  | '\'' -> '\''
   | '"'-> '"'     (* '"' *)
   | '?' -> '?'
   | '(' when not !Cprint.msvcMode -> '('
   | '{' when not !Cprint.msvcMode -> '{'
   | '[' when not !Cprint.msvcMode -> '['
   | '%' when not !Cprint.msvcMode -> '%'
-  | '\\' -> '\\' 
+  | '\\' -> '\\'
   | other -> error ("Unrecognized escape sequence: \\" ^ (String.make 1 other))
   in
   Int64.of_int (Char.code result)
@@ -366,13 +373,13 @@ let make_char (i:int64):char =
 
 
 (* ISO standard locale-specific function to convert a wide character
- * into a sequence of normal characters. Here we work on strings. 
- * We convert L"Hi" to "H\000i\000" 
+ * into a sequence of normal characters. Here we work on strings.
+ * We convert L"Hi" to "H\000i\000"
   matth: this seems unused.
 let wbtowc wstr =
-  let len = String.length wstr in 
-  let dest = String.make (len * 2) '\000' in 
-  for i = 0 to len-1 do 
+  let len = String.length wstr in
+  let dest = String.make (len * 2) '\000' in
+  for i = 0 to len-1 do
     dest.[i*2] <- wstr.[i] ;
   done ;
   dest
@@ -404,9 +411,9 @@ let letter = ['a'- 'z' 'A'-'Z']
 
 let usuffix = ['u' 'U']
 let lsuffix = "l"|"L"|"ll"|"LL"
-let intsuffix = lsuffix | usuffix | usuffix lsuffix | lsuffix usuffix 
+let intsuffix = lsuffix | usuffix | usuffix lsuffix | lsuffix usuffix
               | usuffix ? "i64"
-                
+
 
 let hexprefix = '0' ['x' 'X']
 
@@ -419,8 +426,8 @@ let fraction  = '.' decdigit+
 let decfloat = (intnum? fraction)
 	      |(intnum exponent)
 	      |(intnum? fraction exponent)
-	      | (intnum '.') 
-              | (intnum '.' exponent) 
+	      | (intnum '.')
+              | (intnum '.' exponent)
 
 let hexfraction = hexdigit* '.' hexdigit+ | hexdigit+ '.'
 let binexponent = ['p' 'P'] ['+' '-']? decdigit+
@@ -430,15 +437,18 @@ let hexfloat = hexprefix hexfraction binexponent
 let floatsuffix = ['f' 'F' 'l' 'L']
 let floatnum = (decfloat | hexfloat) floatsuffix?
 
-let ident = (letter|'_'|'$')(letter|decdigit|'_'|'$')* 
+let complexnum = (decfloat | hexfloat) ((['i' 'I'] floatsuffix) | (floatsuffix? ['i' 'I']))
+
+
+let ident = (letter|'_'|'$')(letter|decdigit|'_'|'$')*
 let blank = [' ' '\t' '\012' '\r']+
 let escape = '\\' _
 let hex_escape = '\\' ['x' 'X'] hexdigit+
-let oct_escape = '\\' octdigit octdigit? octdigit? 
+let oct_escape = '\\' octdigit octdigit? octdigit?
 
 (* Pragmas that are not parsed by CIL.  We lex them as PRAGMA_LINE tokens *)
 let no_parse_pragma =
-               "warning" | "GCC"
+               "warning" | "GCC" | "STDC"
              (* Solaris-style pragmas:  *)
              | "ident" | "section" | "option" | "asm" | "use_section" | "weak"
              | "redefine_extname"
@@ -480,22 +490,23 @@ rule initial =
 |		"L'"			{ CST_WCHAR (chr lexbuf, currentLoc ()) }
 |		'"'			{ addLexeme lexbuf; (* '"' *)
 (* matth: BUG:  this could be either a regular string or a wide string.
- *  e.g. if it's the "world" in 
+ *  e.g. if it's the "world" in
  *     L"Hello, " "world"
  *  then it should be treated as wide even though there's no L immediately
  *  preceding it.  See test/small1/wchar5.c for a failure case. *)
                                           try CST_STRING (str lexbuf, currentLoc ())
-                                          with e -> 
-                                             raise (InternalError 
-                                                     ("str: " ^ 
+                                          with e ->
+                                             raise (InternalError
+                                                     ("str: " ^
                                                       Printexc.to_string e))}
 |		"L\""			{ (* weimer: wchar_t string literal *)
                                           try CST_WSTRING(str lexbuf, currentLoc ())
-                                          with e -> 
-                                             raise (InternalError 
-                                                     ("wide string: " ^ 
+                                          with e ->
+                                             raise (InternalError
+                                                     ("wide string: " ^
                                                       Printexc.to_string e))}
 |		floatnum		{CST_FLOAT (Lexing.lexeme lexbuf, currentLoc ())}
+|   complexnum  {CST_COMPLEX (Lexing.lexeme lexbuf, currentLoc ())}
 |		hexnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
 |		octnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
 |		intnum			{CST_INT (Lexing.lexeme lexbuf, currentLoc ())}
@@ -537,7 +548,7 @@ rule initial =
 |		'?'				{QUEST}
 |		':'				{COLON}
 |		'~'		       {TILDE (currentLoc ())}
-	
+
 |		'{'		       {dbgToken (LBRACE (currentLoc ()))}
 |		'}'		       {dbgToken (RBRACE (currentLoc ()))}
 |		'['				{LBRACKET}
@@ -548,15 +559,15 @@ rule initial =
 |		','				{COMMA}
 |		'.'				{DOT}
 |		"sizeof"		{SIZEOF (currentLoc ())}
-|               "__asm"                 { if !Cprint.msvcMode then 
-                                             MSASM (msasm lexbuf, currentLoc ()) 
+|               "__asm"                 { if !Cprint.msvcMode then
+                                             MSASM (msasm lexbuf, currentLoc ())
                                           else (ASM (currentLoc ())) }
 
 (* If we see __pragma we eat it and the matching parentheses as well *)
 |               "__pragma"              { matchingParsOpen := 0;
-                                          let _ = matchingpars lexbuf in 
+                                          let _ = matchingpars lexbuf in
                                           addWhite lexbuf;
-                                          initial lexbuf 
+                                          initial lexbuf
                                         }
 
 (* sm: tree transformation keywords *)
@@ -573,7 +584,7 @@ rule initial =
 |		eof			{EOF}
 |		_			{E.parse_error "Invalid symbol"}
 and comment =
-    parse 	
+    parse
       "*/"			        { addWhite lexbuf; [] }
 (*|     '\n'                              { E.newline (); lex_unescaped comment lexbuf }*)
 | 		_ 			{ addWhite lexbuf; lex_comment comment lexbuf }
@@ -588,9 +599,9 @@ and matchingpars = parse
 | blank         { addWhite lexbuf; matchingpars lexbuf }
 | '('           { addWhite lexbuf; incr matchingParsOpen; matchingpars lexbuf }
 | ')'           { addWhite lexbuf; decr matchingParsOpen;
-                  if !matchingParsOpen = 0 then 
+                  if !matchingParsOpen = 0 then
                      ()
-                  else 
+                  else
                      matchingpars lexbuf
                 }
 |  "/*"		{ addWhite lexbuf; let il = comment lexbuf in
@@ -598,7 +609,7 @@ and matchingpars = parse
 		  addComment sl;
                   matchingpars lexbuf}
 |  '"'		{ addWhite lexbuf; (* '"' *)
-                  let _ = str lexbuf in 
+                  let _ = str lexbuf in
                   matchingpars lexbuf
                  }
 | _              { addWhite lexbuf; matchingpars lexbuf }
@@ -607,12 +618,12 @@ and matchingpars = parse
 and hash = parse
   '\n'		{ addWhite lexbuf; E.newline (); initial lexbuf}
 | blank		{ addWhite lexbuf; hash lexbuf}
-| intnum	{ addWhite lexbuf; (* We are seeing a line number. This is the number for the 
+| intnum	{ addWhite lexbuf; (* We are seeing a line number. This is the number for the
                    * next line *)
                  let s = Lexing.lexeme lexbuf in
                  let lineno = try
                    int_of_string s
-                 with Failure ("int_of_string") ->
+                 with Failure _ ->
                    (* the int is too big. *)
                    E.warn "Bad line number in preprocessed file: %s" s;
                    (-1)
@@ -621,7 +632,7 @@ and hash = parse
                   (* A file name may follow *)
 		  file lexbuf }
 | "line"        { addWhite lexbuf; hash lexbuf } (* MSVC line number info *)
-                (* For pragmas with irregular syntax, like #pragma warning, 
+                (* For pragmas with irregular syntax, like #pragma warning,
                  * we parse them as a whole line. *)
 | "pragma" blank (no_parse_pragma as pragmaName)
                 { let here = currentLoc () in
@@ -630,27 +641,27 @@ and hash = parse
 | "pragma"      { pragmaLine := true; PRAGMA (currentLoc ()) }
 | _	        { addWhite lexbuf; endline lexbuf}
 
-and file =  parse 
+and file =  parse
         '\n'		        {addWhite lexbuf; E.newline (); initial lexbuf}
 |	blank			{addWhite lexbuf; file lexbuf}
 |	'"' [^ '\012' '\t' '"']* '"' 	{ addWhite lexbuf;  (* '"' *)
                                    let n = Lexing.lexeme lexbuf in
-                                   let n1 = String.sub n 1 
+                                   let n1 = String.sub n 1
                                        ((String.length n) - 2) in
                                    E.setCurrentFile n1;
 				 endline lexbuf}
 
 |	_			{addWhite lexbuf; endline lexbuf}
 
-and endline = parse 
+and endline = parse
         '\n' 			{ addWhite lexbuf; E.newline (); initial lexbuf}
 |   eof                         { EOF }
 |	_			{ addWhite lexbuf; endline lexbuf}
 
 and pragma = parse
    '\n'                 { E.newline (); "" }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
-                          cur ^ (pragma lexbuf) }  
+|   _                   { let cur = Lexing.lexeme lexbuf in
+                          cur ^ (pragma lexbuf) }
 
 and str = parse
         '"'             {[]} (* no nul terminiation in CST_STRING '"' *)
@@ -665,25 +676,25 @@ and chr =  parse
 |	oct_escape	{lex_oct_escape chr lexbuf}
 |	escape		{lex_simple_escape chr lexbuf}
 |	_		{lex_unescaped chr lexbuf}
-	
+
 and msasm = parse
     blank               { msasm lexbuf }
 |   '{'                 { msasminbrace lexbuf }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
+|   _                   { let cur = Lexing.lexeme lexbuf in
                           cur ^ (msasmnobrace lexbuf) }
 
 and msasminbrace = parse
     '}'                 { "" }
-|   _                   { let cur = Lexing.lexeme lexbuf in 
-                          cur ^ (msasminbrace lexbuf) }  
+|   _                   { let cur = Lexing.lexeme lexbuf in
+                          cur ^ (msasminbrace lexbuf) }
 and msasmnobrace = parse
-   ['}' ';' '\n']       { lexbuf.Lexing.lex_curr_pos <- 
+   ['}' ';' '\n']       { lexbuf.Lexing.lex_curr_pos <-
                                lexbuf.Lexing.lex_curr_pos - 1;
                           "" }
-|  "__asm"              { lexbuf.Lexing.lex_curr_pos <- 
+|  "__asm"              { lexbuf.Lexing.lex_curr_pos <-
                                lexbuf.Lexing.lex_curr_pos - 5;
                           "" }
-|  _                    { let cur = Lexing.lexeme lexbuf in 
+|  _                    { let cur = Lexing.lexeme lexbuf in
 
                           cur ^ (msasmnobrace lexbuf) }
 

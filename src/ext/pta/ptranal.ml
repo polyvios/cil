@@ -38,6 +38,7 @@ exception Bad_function
 
 
 open Cil
+open Feature
 
 module H = Hashtbl
 
@@ -254,6 +255,8 @@ and analyze_expr (e : exp ) : A.tau =
       | StartOf l -> A.address (analyze_lval l)
       | AlignOfE _ -> A.bottom ()
       | SizeOfE _ -> A.bottom ()
+      | Imag __ -> A.bottom ()
+      | Real __ -> A.bottom ()
  in
   H.add expressions e result;
   result
@@ -284,21 +287,21 @@ let analyze_instr (i : instr ) : unit =
           List.iter (fun e -> ignore (analyze_expr e)) actuals
         else (* todo : check to see if the thing is an undefined function *)
           let fnres, site =
-            if is_undefined_fun fexpr & !conservative_undefineds then
-              A.apply_undefined (Util.list_map analyze_expr actuals)
+            if is_undefined_fun fexpr && !conservative_undefineds then
+              begin
+                found_undefined := true;
+                A.apply_undefined (Util.list_map analyze_expr actuals)
+              end
             else
               A.apply (analyze_expr fexpr) (Util.list_map analyze_expr actuals)
           in
             begin
               match res with
-                  Some r ->
-                    begin
-                      A.assign_ret site (analyze_lval r) fnres;
-                      found_undefined := true;
-                    end
+                  Some r -> A.assign_ret site (analyze_lval r) fnres
                 | None -> ()
             end
     | Asm _ -> ()
+    | VarDecl _ -> ()
 
 let rec analyze_stmt (s : stmt ) : unit =
   match s.skind with
@@ -521,7 +524,7 @@ let compute_aliases = compute_may_aliases
 
 type absloc = A.absloc
 
-let rec lvalue_of_varinfo (vi : varinfo) : A.lvalue =
+let lvalue_of_varinfo (vi : varinfo) : A.lvalue =
   H.find lvalue_hash vi
 
 let lvalue_of_lval = traverse_lval
@@ -561,16 +564,15 @@ let absloc_eq a b = A.absloc_eq (a, b)
 let d_absloc: unit -> absloc -> Pretty.doc = A.d_absloc
 
 
-let ptrAnalysis = ref false
 let ptrResults = ref false
 let ptrTypes = ref false
 
 
 
 (** Turn this into a CIL feature *)
-let feature : featureDescr = {
+let feature = {
   fd_name = "ptranal";
-  fd_enabled = ptrAnalysis;
+  fd_enabled = false;
   fd_description = "alias analysis";
   fd_extraopt = [
     ("--ptr_may_aliases",
@@ -596,3 +598,5 @@ let feature : featureDescr = {
                if !ptrTypes then print_types ());
   fd_post_check = false (* No changes *)
 }
+
+let () = Feature.register feature

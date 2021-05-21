@@ -1,11 +1,11 @@
 (*
  *
- * Copyright (c) 2001-2002, 
+ * Copyright (c) 2001-2002,
  *  George C. Necula    <necula@cs.berkeley.edu>
  *  Scott McPeak        <smcpeak@cs.berkeley.edu>
  *  Wes Weimer          <weimer@cs.berkeley.edu>
  * All rights reserved.
- * 
+ *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are
  * met:
@@ -41,7 +41,7 @@ val convFile: Cabs.file -> Cil.file
 (** Turn on tranformation that forces correct parameter evaluation order *)
 val forceRLArgEval: bool ref
 
-(** Set this integer to the index of the global to be left in CABS form. Use 
+(** Set this integer to the index of the global to be left in CABS form. Use
  * -1 to disable *)
 val nocil: int ref
 
@@ -74,7 +74,7 @@ val typeForTypeof: (Cil.typ -> Cil.typ) ref
   types of cabs2cil-introduced temp variables. *)
 val typeForInsertedVar: (Cil.typ -> Cil.typ) ref
 
-(** Like [typeForInsertedVar], but for casts.  
+(** Like [typeForInsertedVar], but for casts.
   * Casts in the source code are exempt from this hook. *)
 val typeForInsertedCast: (Cil.typ -> Cil.typ) ref
 
@@ -84,3 +84,25 @@ val typeForCombinedArg: ((string, string) Hashtbl.t -> Cil.typ -> Cil.typ) ref
 (** A hook into the code that merges arguments in function attributes. *)
 val attrsForCombinedArg: ((string, string) Hashtbl.t ->
                           Cil.attributes -> Cil.attributes) ref
+
+val allTempVars: unit Inthash.t
+
+type envdata =
+    EnvVar of Cil.varinfo                   (* The name refers to a variable
+                                         * (which could also be a function) *)
+  | EnvEnum of Cil.exp * Cil.typ                (* The name refers to an enumeration
+                                         * tag for which we know the value
+                                         * and the host type *)
+  | EnvTyp of Cil.typ                       (* The name is of the form  "struct
+                                         * foo", or "union foo" or "enum foo"
+                                         * and refers to a type. Note that
+                                         * the name of the actual type might
+                                         * be different from foo due to alpha
+                                         * conversion *)
+  | EnvLabel of string                  (* The name refers to a label. This
+                                         * is useful for GCC's locally
+                                         * declared labels. The lookup name
+                                         * for this category is "label foo" *)
+(** A hashtable containing a mapping of variables, enums, types and labels to varinfo, typ, etc. *)
+(*  It enables a lookup of the original variable names before the alpha conversion by cabs2cil *)
+val environment : (string, envdata * Cil.location) Hashtbl.t

@@ -1,3 +1,5 @@
+_opam/
+src/.merlin
 # /
 /camlprim0.obj
 /*.a
@@ -42,6 +44,7 @@
 /README
 /index.html
 /stamp-h
+/META
 
 # /debian/
 /debian/build-stamp
@@ -79,14 +82,22 @@
 # /doc/html/
 /doc/html/*
 
-# /lib/
-/lib/App/Cilly/CilConfig.pm
-/lib/App/Cilly.pm
-/lib/Makefile
-/lib/Makefile.old
-/lib/MYMETA.yml
-/lib/blib/*
-/lib/pm_to_blib
+# /lib/perl5/
+/lib/perl5/App/Cilly/CilConfig.pm
+/lib/perl5/App/Cilly.pm
+/lib/perl5/Makefile
+/lib/perl5/Makefile.old
+/lib/perl5/MYMETA.yml
+/lib/perl5/MYMETA.json
+/lib/perl5/blib/*
+/lib/perl5/pm_to_blib
+
+# /lib/cil
+/lib/cil
+/lib/goblint-cil
+
+# /share
+/share/cil/ocamlpath
 
 # /bin/
 /bin/cilly.*
@@ -382,4 +393,27 @@
 /test/small2/funcptr3
 /test/small2/merge-ar
 /test/small2/libmerge.a
-
+/test/small2/*.o
+.vscode/settings.json
+src/ext/blockinggraph/.merlin
+src/ext/callgraph/.merlin
+src/ext/zrapp/.merlin
+src/ext/simplify/.merlin
+src/ext/simplemem/.merlin
+src/ext/sfi/.merlin
+src/ext/pta/.merlin
+src/ext/partial/.merlin
+src/ext/oneret/.merlin
+src/ext/logwrites/.merlin
+src/ext/logcalls/.merlin
+src/ext/llvm/.merlin
+src/ext/liveness/.merlin
+src/ext/inliner/.merlin
+src/ext/heapify/.merlin
+src/ext/epicenter/.merlin
+src/ext/dataslicing/.merlin
+src/ext/ccl/.merlin
+src/ext/canonicalize/.merlin
+src/ext/cqualann/.merlin
+src/ext/syntacticsearch/.merlin
+src/ext/makecfg/.merlin
