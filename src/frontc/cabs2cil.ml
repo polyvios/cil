@@ -82,7 +82,7 @@ let allowDuplication: bool ref = ref true
     This is false by default.  Set to true to replicate the behavior
     of CIL 1.3.5 and earlier.
 *)
-let doCollapseCallCast: bool ref = ref false
+let doCollapseCallCast: bool ref = ref true (* LOCKSMITH *)
 
 (** Disables caching of globals during parsing.  This is handy when we want
   * to parse additional source files without hearing about confclits. *)

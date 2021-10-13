@@ -1384,8 +1384,9 @@ let attributeHash: (string, attributeClass) H.t =
     [ "section"; "constructor"; "destructor"; "unused"; "used"; "weak"; 
       "no_instrument_function"; "alias"; "no_check_memory_usage";
       "exception"; "model"; (* "restrict"; *)
-      "aconst"; "__asm__" (* Gcc uses this to specifiy the name to be used in 
-                           * assembly for a global  *)];
+      "aconst"; "__asm__"; (* Gcc uses this to specifiy the name to be used in 
+                            * assembly for a global  *)
+      "atomic" ]; (* LOCKSMITH *)
 
   (* Now come the MSVC declspec attributes *)
   List.iter (fun a -> H.add table a (AttrName true))

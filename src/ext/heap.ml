@@ -33,6 +33,8 @@ let insert heap prio elt = begin
   heap.elements.(!i) <- (prio,Some(elt))
   end
 
+let length h = h.size (* LOCKSMITH *)
+
 let examine_max heap = 
   if is_empty heap then begin
     raise (Invalid_argument "Heap.examine_max")

@@ -1,3 +1,4 @@
+type key = int (* LOCKSMITH *)
 type 'a t
 
 (* These functions behave the same as Hashtbl, but the key type is
