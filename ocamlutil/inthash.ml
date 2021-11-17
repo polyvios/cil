@@ -191,3 +191,13 @@ let memoize (h: 'a t) (key: int) (f: int -> 'a) : 'a =
   
 let tolist (h: 'a t) : (int * 'a) list = 
   fold (fun k d acc -> (k, d) :: acc) h []
+
+
+(* ignore added fields after 4.00.0 *)
+let filter_map_inplace (f: int -> 'a -> 'a option) (h: 'a t) : unit = failwith ("unimplemented")
+
+let reset (h: 'a t) : unit = failwith ("unimplemented")
+
+let stats (h: 'a t) : Hashtbl.statistics = failwith("unimplemented")
+
+let find_opt (h: 'a t) (x: int) : 'a option = failwith("unimplemented")

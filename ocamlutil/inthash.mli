@@ -27,3 +27,8 @@ val fold: (int -> 'a -> 'b -> 'b) -> 'a t -> 'b -> 'b
 val memoize: 'a t -> int -> (int -> 'a) -> 'a
 
 val tolist: 'a t -> (int * 'a) list
+
+val filter_map_inplace: (int -> 'a -> 'a option) -> 'a t -> unit
+val reset : ('a t) -> unit
+val stats : ('a t) -> Hashtbl.statistics
+val find_opt : 'a t -> int -> 'a option
